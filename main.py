@@ -1,2 +1,4 @@
-print ("Hello World")
-print ("Hello Mars")
+from board import *
+
+board = Board(3)
+board.printBoard()

@@ -1,0 +1,20 @@
+Board, Player and Game classes
+
+Player:
+Attributes:
+
+
+Board: 
+Attributes:
+    2D array for Board
+    current player
+
+Methods:
+    print Board
+    check move (validate)
+    check win
+
+Game:
+Attributes:
+
+Methods:
