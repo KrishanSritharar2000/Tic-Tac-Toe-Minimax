@@ -1,9 +1,5 @@
 Board, Player and Game classes
 
-Player:
-Attributes:
-
-
 Board: 
 Attributes:
     2D array for Board
@@ -18,3 +14,4 @@ Game:
 Attributes:
 
 Methods:
+    getMove
