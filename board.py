@@ -1,7 +1,8 @@
 class Board():
     def __init__(self, size=3):
-        self.board = [[str(y * size + x) for x in range(size)] for y in range(size)]
         self.size = size
+        self.clear()
+        self.moveCount = 0
 
     def printBoard(self):
         border = ['_' for i in range(self.size*5*2 + 1)]
@@ -13,3 +14,47 @@ class Board():
             for col in row:
                 print("    " + col + "    |", end='')
             print("\n|_________|_________|_________|")
+
+    def checkMove(self, move):
+        if (int(move) < 0 or int(move) > self.size * self.size):
+            # Not a valid number on grid
+            return False
+        # if point on board == move then in empty
+        return self.board[int(move) // self.size][int(move) % self.size] == move
+
+    # PRE: checkMove was tested     
+    def move(self, move, token):
+        if self.checkMove(move):
+            self.board[int(move) // self.size][int(move) % self.size] = token
+            self.moveCount += 1
+
+    def isFull(self):
+        return self.moveCount >= self.size * self.size
+
+    def checkWin(self):
+        # check horizontal
+        for i in range(self.size):
+            check = True
+            for j in range(self.size - 1):
+                check &= self.board[i][j] == self.board[i][j + 1]
+            if check:
+                return True
+
+        # check vertical
+        for i in range(self.size):
+            check = True
+            for j in range(self.size - 1):
+                check &= self.board[j][i] == self.board[j + 1][i]
+            if check:
+                return True
+
+        # check diagonal
+        check = True
+        for i in range(self.size - 1):
+            check &= self.board[i][i] == self.board[i+1][i+1]
+        return check
+
+    def clear(self):
+        self.board = [[str(y * self.size + x) for x in range(self.size)]
+                      for y in range(self.size)]
+        self.moveCount = 0
