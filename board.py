@@ -1,18 +1,33 @@
+import random
+
 class Board():
-    def __init__(self, size=3):
+    def __init__(self, size=3, players=2):
         self.size = size
+        self.playerTokens = ['X', 'O', '*', '$', '&', '?']
+        self.numOfPlayers = players
+        self.tokenColours = ["\033[1;31;40m", "\033[1;34;40m", "\033[1;35;40m", "\033[1;36;40m", "\033[1;33;40m", "\033[1;95;40m"]
         self.clear()
         self.moveCount = 0
+        self.boardColour = "\033[1;32;40m"
+
+    def getPlayerToken(self, playerCounter):
+        assert (playerCounter >= 0 and playerCounter < self.numOfPlayers)
+        return self.playerTokens[playerCounter]
 
     def printBoard(self):
         border = ['_' for i in range(self.size*5*2 + 1)]
         border = ''.join(border)
-        print(border)
+        print(self.boardColour + border)
         for row in self.board:
             print("|         |         |         |")
             print('|', end='')
             for col in row:
-                print("    " + col + "    |", end='')
+                if col in self.playerTokens:
+                    printedCol = self.chosenColours[self.playerTokens.index(col)] + col + self.boardColour
+                else:
+                    printedCol = "\033[1;30m" + col + self.boardColour
+
+                print("    " + printedCol + "    |", end='')
             print("\n|_________|_________|_________|")
 
     def checkMove(self, move):
@@ -48,13 +63,21 @@ class Board():
             if check:
                 return True
 
-        # check diagonal
+        # check leading diagonal
         check = True
         for i in range(self.size - 1):
             check &= self.board[i][i] == self.board[i+1][i+1]
+        if check:
+            return True
+        
+        #check other diagonal
+        check = True
+        for i in range(self.size - 1):
+            check &= self.board[i][self.size - 1 - i] == self.board[i+1][self.size - i - 2]
         return check
 
     def clear(self):
         self.board = [[str(y * self.size + x) for x in range(self.size)]
                       for y in range(self.size)]
         self.moveCount = 0
+        self.chosenColours = random.sample(self.tokenColours, self.numOfPlayers)

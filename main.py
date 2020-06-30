@@ -1,13 +1,11 @@
 from board import *
-from player import *
 
 class Game():
 
     def __init__(self, size=3, players=2):
-        self.playerTokens = ['X', 'O', '*', '$']
-        self.board = Board(size)
-        self.players = [Player(self.playerTokens[x]) for x in range(players)]
+        assert (players > 0 and players <=6), "Only between 1 and 6 players allowed" 
         self.numOfPlayers = players
+        self.board = Board(size, players)
         self.playerCounter = 0
 
     def nextPlayer(self):
@@ -15,12 +13,12 @@ class Game():
         self.playerCounter %= self.numOfPlayers
 
     def getMove(self):
-        print("Player %s's turn" % (self.playerCounter + 1))
+        print("\033[0mPlayer %s's turn" % (self.playerCounter + 1))
         validMove = False
         while not validMove:
             move = input("Enter the number of the square to place your token: ")
             validMove = self.board.checkMove(move)
-        self.board.move(move, self.players[self.playerCounter].getToken())
+        self.board.move(move, self.board.getPlayerToken(self.playerCounter))
         self.board.printBoard()
         self.nextPlayer()
 
@@ -33,7 +31,7 @@ class Game():
             while (not self.board.isFull()):
                 self.getMove()
                 if (self.board.checkWin()):
-                    print("Player %s has won the game!" % ((self.playerCounter - 1) % self.numOfPlayers + 1))
+                    print("\033[0mPlayer %s has won the game!" % ((self.playerCounter - 1) % self.numOfPlayers + 1))
                     break
             answer = None
             while answer not in ("yes", "no", "y", "n"):
