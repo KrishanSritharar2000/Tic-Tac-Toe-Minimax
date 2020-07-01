@@ -114,4 +114,4 @@ class Board():
         self.board = [['X', '1', '2'],
                       ['3', '4', '5'],
                       ['O', '7', 'X']]
-        self.moveCount = 4
+        self.moveCount = 3

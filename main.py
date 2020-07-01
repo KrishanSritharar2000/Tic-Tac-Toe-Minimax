@@ -10,46 +10,64 @@ class Game():
         self.board = Board(size, players)
         self.playerCounter = 0
         self.totalComp = 0
+        self.playingAI = False
 
-    def nextPlayer(self):
+    def __nextPlayer(self):
         self.playerCounter += 1
         self.playerCounter %= self.numOfPlayers
 
-    def getMove(self):
-        print("\033[0mPlayer %s's turn" % (self.playerCounter + 1))
+    def __getMove(self):
+        if self.playingAI:
+            print("\033[0mPlayer's turn")
+        else:
+            print("\033[0mPlayer %s's turn" % (self.playerCounter + 1))
         validMove = False
         while not validMove:
             move = input("Enter the number of the square to place your token: ")
             validMove = self.board.checkMove(move)
         self.board.move(int(move), self.board.getPlayerToken(self.playerCounter))
         self.board.printBoard()
-        self.nextPlayer()
+        self.__nextPlayer()
+
+    def __getAIMove(self):
+        self.board.move(self.bestMove(), self.board.getPlayerToken(self.playerCounter))
+        self.board.printBoard()
+        self.__nextPlayer()
 
     def playAI(self):
+        self.playingAI = True
         playAgain = True
         while playAgain:
             self.board.clear()
             self.board.printBoard()
+            #below for AI vs AI
+            #self.playerCounter = 1 if self.playerIsFirst else 0
             self.playerCounter = 0
             draw = True
+            if self.playerIsFirst:
+                self.__getMove()
+            self.__getAIMove()
             while (not self.board.isFull()):
-                if self.playerIsFirst:
-                    self.getMove()
-                    if (self.board.checkWin()):
-                        print("\033[0mCongratulations, You have won the game!" )
-                        draw = False
-                        break
+                #Get move from player
+                self.__getMove()
+                if (self.board.checkWin()):
+                    print("\033[0mCongratulations, You have won the game!" )
+                    draw = False
+                    break
+                #Make AI move
                 if not self.board.isFull():
-                    self.board.move(self.bestMove(), self.board.getPlayerToken(self.playerCounter))
-                    self.board.printBoard()
-                    self.nextPlayer()
+                    self.__getAIMove()
+                    #below for AI vs AI
+                    # self.playerIsFirst = not self.playerIsFirst
                     if (self.board.checkWin()):
                         print("\033[0mThe AI has won the game!" )
                         draw = False
                         break
                     self.totalComp = 0
+
             if (draw):
                 print("\033[0mThe game has ended in a draw!")
+
             answer = None
             while answer not in ("yes", "no", "y", "n"):
                 answer = input("Do you want to play again [Y/N]: ").lower()
@@ -57,6 +75,7 @@ class Game():
                 playAgain = False
     
     def play(self):
+        self.playingAI = False
         playAgain = True
         while playAgain:
             self.board.clear()
@@ -64,7 +83,7 @@ class Game():
             self.playerCounter = 0
             draw = True
             while (not self.board.isFull()):
-                self.getMove()
+                self.__getMove()
                 if (self.board.checkWin()):
                     print("\033[0mPlayer %s has won the game!" % ((self.playerCounter - 1) % self.numOfPlayers + 1))
                     draw = False
@@ -136,7 +155,7 @@ class Game():
 
 
 # sys.setrecursionlimit(10**8)        
-g = Game(goFirst=False)
+g = Game(3, goFirst=True)
 g.playAI()
 # g.play()
 # g.board.test()
