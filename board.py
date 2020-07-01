@@ -19,17 +19,31 @@ class Board():
         border = ''.join(border)
         print(self.boardColour + border)
         for row in self.board:
-            print("|         |         |         |")
             print('|', end='')
+            for i in range(self.size):
+                print("         |", end='')
+            print('\n|', end='')
+
             for col in row:
+                space = "    "#4 space characters
                 if col in self.playerTokens:
                     printedCol = self.chosenColours[self.playerTokens.index(col)] + col + self.boardColour
                 else:
                     printedCol = "\033[1;30m" + col + self.boardColour
+                    if (int(col) >= 1000):
+                        space = " "
+                    elif (int(col) >= 100):
+                        space = "  "
+                    elif (int(col) >= 10):
+                        space = "   " 
+                print(space + printedCol + "    |", end='')
+            print("\n|", end='')
 
-                print("    " + printedCol + "    |", end='')
-            print("\n|_________|_________|_________|")
+            for i in range(self.size):
+                print("_________|", end='')#_________|_________|")
+            print("\n", end='')
 
+    # move is the number representing the position on the board
     def checkMove(self, move):
         if (int(move) < 0 or int(move) > self.size * self.size):
             # Not a valid number on grid
@@ -39,12 +53,26 @@ class Board():
 
     # PRE: checkMove was tested     
     def move(self, move, token):
-        if self.checkMove(move):
-            self.board[int(move) // self.size][int(move) % self.size] = token
+        if self.checkMove(str(move)):
+            self.board[move // self.size][move % self.size] = token
             self.moveCount += 1
 
     def isFull(self):
         return self.moveCount >= self.size * self.size
+
+    def isCellEmpty(self, row, col):
+        assert 0 <= row and row < self.size, "Invalid Row" 
+        assert 0 <= col and col < self.size, "Invalid Column" 
+        return self.board[row][col] == str(row * self.size + col)
+
+    def resetCell(self, row, col):
+        assert 0 <= row and row < self.size, "Invalid Row" 
+        assert 0 <= col and col < self.size, "Invalid Column" 
+        self.board[row][col] = str(row * self.size + col)
+        self.moveCount -= 1
+
+    def getSize(self):
+        return self.size
 
     def checkWin(self):
         # check horizontal
@@ -81,3 +109,9 @@ class Board():
                       for y in range(self.size)]
         self.moveCount = 0
         self.chosenColours = random.sample(self.tokenColours, self.numOfPlayers)
+
+    def test(self):
+        self.board = [['X', '1', '2'],
+                      ['3', '4', '5'],
+                      ['O', '7', 'X']]
+        self.moveCount = 4

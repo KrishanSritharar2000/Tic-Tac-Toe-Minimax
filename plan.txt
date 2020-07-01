@@ -15,3 +15,6 @@ Attributes:
 
 Methods:
     getMove
+
+11 1 True <
+-11 0 False >
