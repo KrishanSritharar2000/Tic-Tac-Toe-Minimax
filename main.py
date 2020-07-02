@@ -98,51 +98,67 @@ class Game():
                 playAgain = False
 
     # Maximiser is always the player
-    def minimax(self, board: Board, depth: int, isMaxTurn: bool):
+    def minimax(self, board: Board, depth: int, isMaxTurn: bool, alpha, beta):
         self.totalComp += 1
         if board.checkWin():
             if isMaxTurn:
-                return depth - 10
-            return 10 - depth
+                return depth - (self.board.getSize() * self.board.getSize() + 1)
+            return (self.board.getSize() * self.board.getSize() + 1) - depth
         
         if board.isFull():
             return 0
         
         if isMaxTurn:
-            best = -11
+            best = -1000000
             for row in range(board.getSize()):
                 for col in range(board.getSize()):
                     if board.isCellEmpty(row, col):
                         # TODO: refactor player token out 
                         # Make the move
                         board.move(row * board.getSize() + col, board.playerTokens[0])
-                        #R Recurisively perform minimax and find the max
-                        best = max(best, self.minimax(board, depth + 1, not isMaxTurn))
+                        # Recurisively perform minimax and find the max
+                        currValue = self.minimax(board, depth + 1, not isMaxTurn, alpha, beta)
+                        best = max(best, currValue)
                         #undo the move
                         board.resetCell(row, col)
+                        #pruning
+                        alpha = max(alpha, currValue)
+                        if beta <= alpha:
+                            break
+                else:
+                    continue
+                break
         else:
-            best = 11
+            best = 1000000
             for row in range(board.getSize()):
                 for col in range(board.getSize()):
                     if board.isCellEmpty(row, col):
                         # TODO: refactor player token out 
                         # Make the move
                         board.move(row * board.getSize() + col, board.playerTokens[1])
-                        #R Recurisively perform minimax and find the max
-                        best = min(best, self.minimax(board, depth + 1, not isMaxTurn))
+                        # Recurisively perform minimax and find the max
+                        currValue = self.minimax(board, depth + 1, not isMaxTurn, alpha, beta)
+                        best = min(best, currValue)
                         #undo the move
                         board.resetCell(row, col)
+                        #pruning
+                        beta = min(beta, currValue)
+                        if beta <= alpha:
+                            break
+                else:
+                    continue
+                break
         return best
 
     def bestMove(self):
-        bestValue = 11 if self.playerIsFirst else -11
+        bestValue = 1000000 if self.playerIsFirst else -1000000
         bestMove = -1
 
         for row in range(self.board.size):
             for col in range(self.board.size):
                 if (self.board.isCellEmpty(row, col)):
                     self.board.move(row * self.board.getSize() + col, self.board.playerTokens[1] if self.playerIsFirst else self.board.playerTokens[0])
-                    currValue = self.minimax(self.board, 0, self.playerIsFirst)# X False, O True
+                    currValue = self.minimax(self.board, 0, self.playerIsFirst, -1000000, 1000000)# X False, O True
                     self.board.resetCell(row, col)
 
                     if ((self.playerIsFirst and currValue < bestValue) or 
@@ -155,9 +171,9 @@ class Game():
 
 
 # sys.setrecursionlimit(10**8)        
-g = Game(3, goFirst=True)
-g.playAI()
+g = Game(4, goFirst=True)
+# g.playAI()
 # g.play()
-# g.board.test()
-# g.bestMove()
-# g.board.printBoard()
+g.board.test()
+g.bestMove()
+g.board.printBoard()

@@ -111,7 +111,9 @@ class Board():
         self.chosenColours = random.sample(self.tokenColours, self.numOfPlayers)
 
     def test(self):
-        self.board = [['X', '1', '2'],
-                      ['3', '4', '5'],
-                      ['O', '7', 'X']]
-        self.moveCount = 3
+        self.board = [['X', '1', '2', '3'],
+                      ['4', 'O', '6', '7'],
+                      ['8', 'O', '10', '11'],
+                      ['12', 'O', '14', '15']]
+                      
+        self.moveCount = 4
