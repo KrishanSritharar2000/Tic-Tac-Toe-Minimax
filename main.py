@@ -13,6 +13,7 @@ class Game():
         self.playerCounter = 0
         self.totalComp = 0
         self.playingAI = False
+        self.maxScore = self.board.getSize() * self.board.getSize() + 1
 
     def __nextPlayer(self):
         self.playerCounter += 1
@@ -104,8 +105,8 @@ class Game():
         self.totalComp += 1
         if board.checkWin():
             if isMaxTurn:
-                return depth - (self.board.getSize() * self.board.getSize() + 1)
-            return (self.board.getSize() * self.board.getSize() + 1) - depth
+                return depth - self.maxScore
+            return self.maxScore - depth
         
         if board.isFull() or depth == maxDepth:
             return 0
@@ -155,6 +156,9 @@ class Game():
     def bestMove(self):
         bestValue = 1000000 if self.playerIsFirst else -1000000
         bestMove = -1
+        bestMoves = [i for i in range(self.board.getSize() * self.board.getSize())]
+        print(bestMoves)
+        counter = 0
         start = time.time()
         for row in range(self.board.size):
             for col in range(self.board.size):
@@ -162,19 +166,39 @@ class Game():
                     self.board.move(row * self.board.getSize() + col, self.board.playerTokens[1] if self.playerIsFirst else self.board.playerTokens[0])
                     currValue = self.minimax(self.board, 0, self.maxDepth, self.playerIsFirst, -1000000, 1000000)# X False, O True
                     self.board.resetCell(row, col)
+                    print("This is currValue: {} for row: {} col: {} move: {}".format(currValue, row, col, row * self.board.size + col))
+
+                    if (currValue == bestValue):
+                        bestMoves[counter] = row * self.board.size + col
+                        counter += 1
 
                     if ((self.playerIsFirst and currValue < bestValue) or 
                        (not self.playerIsFirst and currValue > bestValue)):
                         bestValue = currValue
                         bestMove = row * self.board.size + col
+                        counter = 0
+                        bestMoves[counter] = bestMove
+                        counter += 1
+                    
+
+                    #If there is a win on the next move, stop and dont try any more
+                    if ((self.playerIsFirst and bestValue == -self.maxScore) or
+                        (not self.playerIsFirst and bestValue == self.maxScore)):
+                        break
+            else:
+                continue
+            break
+
         print("This is the best move " + str(bestMove))
         print("Total number of comparisons " + str(self.totalComp))
         print("Total time taken: " + str(time.time() - start))
+        if (counter > 0):
+            return random.choice(bestMoves[:counter])
         return bestMove
 
 
 # sys.setrecursionlimit(10**8)        
-g = Game(size=4, goFirst=True, maxDepth=8)
+g = Game(size=4, maxDepth=8, goFirst=True)
 g.playAI()
 # g.play()
 # g.board.test()

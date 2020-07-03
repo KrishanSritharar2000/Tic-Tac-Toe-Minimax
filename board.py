@@ -40,7 +40,7 @@ class Board():
             print("\n|", end='')
 
             for i in range(self.size):
-                print("_________|", end='')#_________|_________|")
+                print("_________|", end='')
             print("\n", end='')
 
     # move is the number representing the position on the board
