@@ -1,12 +1,14 @@
 import sys
 from board import *
+import time
 
 class Game():
 
-    def __init__(self, size=3, players=2, goFirst=True):
+    def __init__(self, size=3, players=2, goFirst=True, maxDepth=1000000):
         assert (players > 0 and players <=6), "Only between 1 and 6 players allowed" 
         self.numOfPlayers = players
         self.playerIsFirst = goFirst
+        self.maxDepth = maxDepth
         self.board = Board(size, players)
         self.playerCounter = 0
         self.totalComp = 0
@@ -98,14 +100,14 @@ class Game():
                 playAgain = False
 
     # Maximiser is always the player
-    def minimax(self, board: Board, depth: int, isMaxTurn: bool, alpha, beta):
+    def minimax(self, board: Board, depth: int, maxDepth: int, isMaxTurn: bool, alpha: int, beta: int):
         self.totalComp += 1
         if board.checkWin():
             if isMaxTurn:
                 return depth - (self.board.getSize() * self.board.getSize() + 1)
             return (self.board.getSize() * self.board.getSize() + 1) - depth
         
-        if board.isFull():
+        if board.isFull() or depth == maxDepth:
             return 0
         
         if isMaxTurn:
@@ -117,7 +119,7 @@ class Game():
                         # Make the move
                         board.move(row * board.getSize() + col, board.playerTokens[0])
                         # Recurisively perform minimax and find the max
-                        currValue = self.minimax(board, depth + 1, not isMaxTurn, alpha, beta)
+                        currValue = self.minimax(board, depth + 1, maxDepth, False, alpha, beta)
                         best = max(best, currValue)
                         #undo the move
                         board.resetCell(row, col)
@@ -137,7 +139,7 @@ class Game():
                         # Make the move
                         board.move(row * board.getSize() + col, board.playerTokens[1])
                         # Recurisively perform minimax and find the max
-                        currValue = self.minimax(board, depth + 1, not isMaxTurn, alpha, beta)
+                        currValue = self.minimax(board, depth + 1, maxDepth, True, alpha, beta)
                         best = min(best, currValue)
                         #undo the move
                         board.resetCell(row, col)
@@ -153,12 +155,12 @@ class Game():
     def bestMove(self):
         bestValue = 1000000 if self.playerIsFirst else -1000000
         bestMove = -1
-
+        start = time.time()
         for row in range(self.board.size):
             for col in range(self.board.size):
                 if (self.board.isCellEmpty(row, col)):
                     self.board.move(row * self.board.getSize() + col, self.board.playerTokens[1] if self.playerIsFirst else self.board.playerTokens[0])
-                    currValue = self.minimax(self.board, 0, self.playerIsFirst, -1000000, 1000000)# X False, O True
+                    currValue = self.minimax(self.board, 0, self.maxDepth, self.playerIsFirst, -1000000, 1000000)# X False, O True
                     self.board.resetCell(row, col)
 
                     if ((self.playerIsFirst and currValue < bestValue) or 
@@ -167,13 +169,14 @@ class Game():
                         bestMove = row * self.board.size + col
         print("This is the best move " + str(bestMove))
         print("Total number of comparisons " + str(self.totalComp))
+        print("Total time taken: " + str(time.time() - start))
         return bestMove
 
 
 # sys.setrecursionlimit(10**8)        
-g = Game(4, goFirst=True)
-# g.playAI()
+g = Game(size=4, goFirst=True, maxDepth=8)
+g.playAI()
 # g.play()
-g.board.test()
-g.bestMove()
-g.board.printBoard()
+# g.board.test()
+# g.bestMove()
+# g.board.printBoard()

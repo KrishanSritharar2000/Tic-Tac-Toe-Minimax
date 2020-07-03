@@ -18,3 +18,9 @@ Methods:
 
 11 1 True <
 -11 0 False >
+
+Order of improvemenets to Minimax
+
+1. Add maximum depth
+2. Add transposition table
+3. Concurrency to populate transposition table
