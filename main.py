@@ -1,6 +1,8 @@
 import sys
 from board import *
 import time
+from multiprocessing import Process, Value, Array
+import ctypes
 
 class Game():
 
@@ -160,6 +162,11 @@ class Game():
         print(bestMoves)
         counter = 0
         start = time.time()
+        if self.board.getMoveCount() == 0:
+            print("Total number of comparisons " + str(self.totalComp))
+            print("Total time taken: " + str(time.time() - start))
+            return random.choice(bestMoves)
+
         for row in range(self.board.size):
             for col in range(self.board.size):
                 if (self.board.isCellEmpty(row, col)):
@@ -196,11 +203,145 @@ class Game():
             return random.choice(bestMoves[:counter])
         return bestMove
 
+    # Maximiser is always the player
+    def minimaxConcurrent(self, board: Board, depth: int, maxDepth: int, isMaxTurn: bool, alpha: int, beta: int, totalComparisons: Value):
+        totalComparisons.value += 1
+        if board.checkWin():
+            if isMaxTurn:
+                return depth - self.maxScore
+            return self.maxScore - depth
+        
+        if board.isFull() or depth == maxDepth:
+            return 0
+        
+        if isMaxTurn:
+            best = -1000000
+            for row in range(board.getSize()):
+                for col in range(board.getSize()):
+                    if board.isCellEmpty(row, col):
+                        # TODO: refactor player token out 
+                        # Make the move
+                        board.move(row * board.getSize() + col, board.playerTokens[0])
+                        # Recurisively perform minimax and find the max
+                        currValue = self.minimaxConcurrent(board, depth + 1, maxDepth, False, alpha, beta, totalComparisons)
+                        best = max(best, currValue)
+                        #undo the move
+                        board.resetCell(row, col)
+                        #pruning
+                        alpha = max(alpha, currValue)
+                        if beta <= alpha:
+                            break
+                else:
+                    continue
+                break
+        else:
+            best = 1000000
+            for row in range(board.getSize()):
+                for col in range(board.getSize()):
+                    if board.isCellEmpty(row, col):
+                        # TODO: refactor player token out 
+                        # Make the move
+                        board.move(row * board.getSize() + col, board.playerTokens[1])
+                        # Recurisively perform minimax and find the max
+                        currValue = self.minimaxConcurrent(board, depth + 1, maxDepth, True, alpha, beta, totalComparisons)
+                        best = min(best, currValue)
+                        #undo the move
+                        board.resetCell(row, col)
+                        #pruning
+                        beta = min(beta, currValue)
+                        if beta <= alpha:
+                            break
+                else:
+                    continue
+                break
+        return best
 
-# sys.setrecursionlimit(10**8)        
-g = Game(size=4, maxDepth=8, goFirst=True)
-g.playAI()
-# g.play()
-# g.board.test()
-# g.bestMove()
-# g.board.printBoard()
+    def callMinimaxConcurrent(self, row, col, board, depth, maxDepth, isMaxTurn, alpha, beta, counter, bestMovesArray, bestValueSingle, totalComparisons, stop):
+        board.move(row * board.getSize() + col, self.board.playerTokens[1] if isMaxTurn else self.board.playerTokens[0])
+        currValue = self.minimaxConcurrent(board, depth, maxDepth, isMaxTurn, alpha, beta, totalComparisons)# X False, O True
+        print("This is currValue: {} for row: {} col: {} move: {}".format(currValue, row, col, row * board.getSize() + col))
+        board.resetCell(row, col)
+        with bestValueSingle.get_lock():
+            if (currValue == bestValueSingle.value):
+                with counter.get_lock():
+                    with bestMovesArray.get_lock():
+                        bestMovesArray[counter.value] = row * board.getSize() + col
+                        counter.value += 1
+
+            if ((isMaxTurn and currValue < bestValueSingle.value) or 
+                (not isMaxTurn and currValue > bestValueSingle.value)):
+                bestValueSingle.value = currValue
+                with counter.get_lock():
+                    # counter.value = 0
+                    with bestMovesArray.get_lock():
+                        bestMovesArray[0] = row * board.getSize() + col
+                    counter.value = 1
+            #If there is a win on the next move, stop and dont try any more
+            if ((isMaxTurn and bestValueSingle.value == -self.maxScore) or
+                (not isMaxTurn and bestValueSingle.value == self.maxScore)):
+
+                stop[0] = True
+
+
+
+    def bestMoveConcurrent(self):
+        start = time.time()
+        if self.board.getMoveCount() == 0:
+            print("Total number of comparisons 0")
+            print("Total time taken: " + str(time.time() - start))
+            return random.choice([i for i in range(self.board.getSize() * self.board.getSize())])
+
+        bestValueSingle = Value(ctypes.c_long, 1000000 if self.playerIsFirst else -1000000)
+        counter = Value(ctypes.c_int, 0)
+        bestMovesArray = Array(ctypes.c_int, range(self.board.getSize() * self.board.getSize()))
+        threads = []
+        totalComp = Value(ctypes.c_int, 0)
+        stop = [False]
+
+        row = 0
+        while (not stop[0] and row < self.board.size):
+            col = 0
+            while (not stop[0] and col < self.board.size):
+                if (self.board.isCellEmpty(row, col)):
+                    threads.append(Process(target=self.callMinimaxConcurrent, args=(row, col, self.board.clone(), 0, self.maxDepth, self.playerIsFirst, -1000000, 1000000, counter, bestMovesArray, bestValueSingle, totalComp, stop)))
+                    threads[-1].start()
+                col += 1
+            row += 1         
+
+                    # self.board.move(row * self.board.getSize() + col, self.board.playerTokens[1] if self.playerIsFirst else self.board.playerTokens[0])
+                    # currValue = self.minimax(self.board, 0, self.maxDepth, self.playerIsFirst, -1000000, 1000000)# X False, O True
+                    # self.board.resetCell(row, col)
+
+            #         #If there is a win on the next move, stop and dont try any more
+            #         if ((self.playerIsFirst and bestValue == -self.maxScore) or
+            #             (not self.playerIsFirst and bestValue == self.maxScore)):
+            #             break
+            # else:
+            #     continue
+            # break
+        print("Total number of threads " + str(len(threads)))
+        for thread in threads:
+            if stop[0]:
+                for thread in threads:
+                    thread.terminate()
+            else:
+                thread.join()
+
+
+        with counter.get_lock():
+            with bestMovesArray.get_lock():
+                print("This is the best move " + str(bestMovesArray[0]))
+                print("Total number of comparisons " + str(totalComp.value))
+                print("Total time taken: " + str(time.time() - start))
+                if (counter.value > 0):
+                    return random.choice(bestMovesArray[:counter.value])
+                return bestMovesArray[0]
+
+if __name__ == '__main__':
+    # sys.setrecursionlimit(10**8)        
+    g = Game(size=4, goFirst=True, maxDepth=10)
+    g.playAI()
+    # g.play()
+    # g.board.test()
+    # g.bestMove()
+    # g.board.printBoard()

@@ -1,4 +1,5 @@
 import random
+import copy
 
 class Board():
     def __init__(self, size=3, players=2):
@@ -74,6 +75,9 @@ class Board():
     def getSize(self):
         return self.size
 
+    def getMoveCount(self):
+        return self.moveCount
+    
     def checkWin(self):
         # check horizontal
         for i in range(self.size):
@@ -103,6 +107,12 @@ class Board():
         for i in range(self.size - 1):
             check &= self.board[i][self.size - 1 - i] == self.board[i+1][self.size - i - 2]
         return check
+
+    def clone(self):
+        b = Board(self.size, self.numOfPlayers)
+        b.board = copy.deepcopy(self.board)
+        b.moveCount = self.moveCount
+        return b
 
     def clear(self):
         self.board = [[str(y * self.size + x) for x in range(self.size)]
