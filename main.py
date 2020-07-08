@@ -1,8 +1,7 @@
-import sys
+import sys, time, ctypes
 from board import *
-import time
 from multiprocessing import Process, Value, Array
-import ctypes
+
 
 class Game():
 
@@ -35,7 +34,7 @@ class Game():
         self.__nextPlayer()
 
     def __getAIMove(self):
-        self.board.move(self.bestMove(), self.board.getPlayerToken(self.playerCounter))
+        self.board.move(self.bestMoveConcurrent(), self.board.getPlayerToken(self.playerCounter))
         self.board.printBoard()
         self.__nextPlayer()
 
@@ -55,7 +54,7 @@ class Game():
             while (not self.board.isFull()):
                 #Get move from player
                 self.__getMove()
-                if (self.board.checkWin()):
+                if (self.board.checkWin() == 1):
                     print("\033[0mCongratulations, You have won the game!" )
                     draw = False
                     break
@@ -64,7 +63,7 @@ class Game():
                     self.__getAIMove()
                     #below for AI vs AI
                     # self.playerIsFirst = not self.playerIsFirst
-                    if (self.board.checkWin()):
+                    if (self.board.checkWin() == 1):
                         print("\033[0mThe AI has won the game!" )
                         draw = False
                         break
@@ -89,7 +88,7 @@ class Game():
             draw = True
             while (not self.board.isFull()):
                 self.__getMove()
-                if (self.board.checkWin()):
+                if (self.board.checkWin() == 1):
                     print("\033[0mPlayer %s has won the game!" % ((self.playerCounter - 1) % self.numOfPlayers + 1))
                     draw = False
                     break
@@ -105,11 +104,19 @@ class Game():
     # Maximiser is always the player
     def minimax(self, board: Board, depth: int, maxDepth: int, isMaxTurn: bool, alpha: int, beta: int):
         self.totalComp += 1
-        if board.checkWin():
+
+        result = board.checkWin(isMaxTurn)
+        if result == 1:
             if isMaxTurn:
                 return depth - self.maxScore
             return self.maxScore - depth
         
+        if result == 2:
+            if isMaxTurn:
+                return self.maxScore
+            return -self.maxScore
+
+
         if board.isFull() or depth == maxDepth:
             return 0
         
@@ -165,6 +172,7 @@ class Game():
         if self.board.getMoveCount() == 0:
             print("Total number of comparisons " + str(self.totalComp))
             print("Total time taken: " + str(time.time() - start))
+            return 0
             return random.choice(bestMoves)
 
         for row in range(self.board.size):
@@ -173,7 +181,7 @@ class Game():
                     self.board.move(row * self.board.getSize() + col, self.board.playerTokens[1] if self.playerIsFirst else self.board.playerTokens[0])
                     currValue = self.minimax(self.board, 0, self.maxDepth, self.playerIsFirst, -1000000, 1000000)# X False, O True
                     self.board.resetCell(row, col)
-                    print("This is currValue: {} for row: {} col: {} move: {}".format(currValue, row, col, row * self.board.size + col))
+                    print("This is currValue: {} for row: {} col: {} move: {} is Max : {}".format(currValue, row, col, row * self.board.size + col, self.playerIsFirst))
 
                     if (currValue == bestValue):
                         bestMoves[counter] = row * self.board.size + col
@@ -204,13 +212,21 @@ class Game():
         return bestMove
 
     # Maximiser is always the player
+    # @jit(target = "cuda")
+    # @jit
     def minimaxConcurrent(self, board: Board, depth: int, maxDepth: int, isMaxTurn: bool, alpha: int, beta: int, totalComparisons: Value):
         totalComparisons.value += 1
-        if board.checkWin():
+        result = board.checkWin(isMaxTurn)
+        if result == 1:
             if isMaxTurn:
                 return depth - self.maxScore
             return self.maxScore - depth
-        
+
+        if result == 2:
+            if isMaxTurn:
+                return self.maxScore
+            return -self.maxScore
+
         if board.isFull() or depth == maxDepth:
             return 0
         
@@ -259,7 +275,7 @@ class Game():
     def callMinimaxConcurrent(self, row, col, board, depth, maxDepth, isMaxTurn, alpha, beta, counter, bestMovesArray, bestValueSingle, totalComparisons, stop):
         board.move(row * board.getSize() + col, self.board.playerTokens[1] if isMaxTurn else self.board.playerTokens[0])
         currValue = self.minimaxConcurrent(board, depth, maxDepth, isMaxTurn, alpha, beta, totalComparisons)# X False, O True
-        print("This is currValue: {} for row: {} col: {} move: {}".format(currValue, row, col, row * board.getSize() + col))
+        print("This is currValue: {} for row: {} col: {} move: {} Maximiser: {}".format(currValue, row, col, row * board.getSize() + col, isMaxTurn))
         board.resetCell(row, col)
         with bestValueSingle.get_lock():
             if (currValue == bestValueSingle.value):
@@ -281,8 +297,6 @@ class Game():
                 (not isMaxTurn and bestValueSingle.value == self.maxScore)):
 
                 stop[0] = True
-
-
 
     def bestMoveConcurrent(self):
         start = time.time()
@@ -308,17 +322,6 @@ class Game():
                 col += 1
             row += 1         
 
-                    # self.board.move(row * self.board.getSize() + col, self.board.playerTokens[1] if self.playerIsFirst else self.board.playerTokens[0])
-                    # currValue = self.minimax(self.board, 0, self.maxDepth, self.playerIsFirst, -1000000, 1000000)# X False, O True
-                    # self.board.resetCell(row, col)
-
-            #         #If there is a win on the next move, stop and dont try any more
-            #         if ((self.playerIsFirst and bestValue == -self.maxScore) or
-            #             (not self.playerIsFirst and bestValue == self.maxScore)):
-            #             break
-            # else:
-            #     continue
-            # break
         print("Total number of threads " + str(len(threads)))
         for thread in threads:
             if stop[0]:
