@@ -186,6 +186,12 @@ class Board():
             result = 2
         return result
 
+    @staticmethod
+    #Returns the hashed value of the provided board
+    def hashBoard(board):
+        return hash(tuple([tuple(row) for row in board]))
+
+    #Returns a clone of the current board
     def clone(self):
         b = Board(self.size, self.numOfPlayers)
         b.board = copy.deepcopy(self.board)

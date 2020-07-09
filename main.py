@@ -1,20 +1,23 @@
-import sys, time, ctypes
+import sys, time, ctypes, pickle
 from board import *
 from multiprocessing import Process, Value, Array
 
 
 class Game():
 
-    def __init__(self, size=3, players=2, goFirst=True, maxDepth=1000000):
+    def __init__(self, size=3, players=2, goFirst=True, maxDepth=1000000, inRow=3):
         assert (players > 0 and players <=6), "Only between 1 and 6 players allowed" 
         self.numOfPlayers = players
         self.playerIsFirst = goFirst
         self.maxDepth = maxDepth
+        self.inRow = size
         self.board = Board(size, players)
         self.playerCounter = 0
         self.totalComp = 0
         self.playingAI = False
         self.maxScore = self.board.getSize() * self.board.getSize() + 1
+        self.tableName = str(size) + "size" + str(self.inRow) + "inRow"
+        self.loadMoveTable()
 
     def __nextPlayer(self):
         self.playerCounter += 1
@@ -34,49 +37,64 @@ class Game():
         self.__nextPlayer()
 
     def __getAIMove(self):
-        self.board.move(self.bestMoveConcurrent(), self.board.getPlayerToken(self.playerCounter))
+        self.board.move(self.bestMove(), self.board.getPlayerToken(self.playerCounter))
         self.board.printBoard()
         self.__nextPlayer()
+
+    def loadMoveTable(self):
+        tableFile = open(self.tableName, "rb")
+        self.moveTable = pickle.load(tableFile)
+        print("table loaded")
+        tableFile.close()
+    
+    def saveMoveTable(self):
+        tableFile = open(self.tableName, "wb")
+        pickle.dump(self.moveTable, tableFile)
+        tableFile.close()
 
     def playAI(self):
         self.playingAI = True
         playAgain = True
-        while playAgain:
-            self.board.clear()
-            self.board.printBoard()
-            #below for AI vs AI
-            #self.playerCounter = 1 if self.playerIsFirst else 0
-            self.playerCounter = 0
-            draw = True
-            if self.playerIsFirst:
-                self.__getMove()
-            self.__getAIMove()
-            while (not self.board.isFull()):
-                #Get move from player
-                self.__getMove()
-                if (self.board.checkWin() == 1):
-                    print("\033[0mCongratulations, You have won the game!" )
-                    draw = False
-                    break
-                #Make AI move
-                if not self.board.isFull():
-                    self.__getAIMove()
-                    #below for AI vs AI
-                    # self.playerIsFirst = not self.playerIsFirst
+        try:
+            while playAgain:
+                self.board.clear()
+                self.board.printBoard()
+                #below for AI vs AI
+                #self.playerCounter = 1 if self.playerIsFirst else 0
+                self.playerCounter = 0
+                draw = True
+                if self.playerIsFirst:
+                    self.__getMove()
+                self.__getAIMove()
+                while (not self.board.isFull()):
+                    #Get move from player
+                    self.__getMove()
                     if (self.board.checkWin() == 1):
-                        print("\033[0mThe AI has won the game!" )
+                        print("\033[0mCongratulations, You have won the game!" )
                         draw = False
                         break
-                    self.totalComp = 0
+                    #Make AI move
+                    if not self.board.isFull():
+                        self.__getAIMove()
+                        #below for AI vs AI
+                        # self.playerIsFirst = not self.playerIsFirst
+                        if (self.board.checkWin() == 1):
+                            print("\033[0mThe AI has won the game!" )
+                            draw = False
+                            break
+                        self.totalComp = 0
 
-            if (draw):
-                print("\033[0mThe game has ended in a draw!")
+                if (draw):
+                    print("\033[0mThe game has ended in a draw!")
 
-            answer = None
-            while answer not in ("yes", "no", "y", "n"):
-                answer = input("Do you want to play again [Y/N]: ").lower()
-            if answer in ("no", "n"):
-                playAgain = False
+                answer = None
+                while answer not in ("yes", "no", "y", "n"):
+                    answer = input("Do you want to play again [Y/N]: ").lower()
+                if answer in ("no", "n"):
+                    playAgain = False
+        finally:
+            self.saveMoveTable()
+
     
     def play(self):
         self.playingAI = False
@@ -105,6 +123,10 @@ class Game():
     def minimax(self, board: Board, depth: int, maxDepth: int, isMaxTurn: bool, alpha: int, beta: int):
         self.totalComp += 1
 
+        hashedTable = board.hashBoard(board.board)
+        if hashedTable in self.moveTable:
+            return self.moveTable[hashedTable]
+
         result = board.checkWin(isMaxTurn)
         if result == 1:
             if isMaxTurn:
@@ -120,6 +142,8 @@ class Game():
         if board.isFull() or depth == maxDepth:
             return 0
         
+
+    
         if isMaxTurn:
             best = -1000000
             for row in range(board.getSize()):
@@ -160,6 +184,7 @@ class Game():
                 else:
                     continue
                 break
+        self.moveTable[hashedTable] = best
         return best
 
     def bestMove(self):
@@ -179,7 +204,13 @@ class Game():
             for col in range(self.board.size):
                 if (self.board.isCellEmpty(row, col)):
                     self.board.move(row * self.board.getSize() + col, self.board.playerTokens[1] if self.playerIsFirst else self.board.playerTokens[0])
-                    currValue = self.minimax(self.board, 0, self.maxDepth, self.playerIsFirst, -1000000, 1000000)# X False, O True
+                    #check if in move table
+                    hashedTable = self.board.hashBoard(self.board.board)
+                    if hashedTable in self.moveTable:
+                        currValue = self.moveTable[hashedTable]
+                    else:
+                        currValue = self.minimax(self.board, 0, self.maxDepth, self.playerIsFirst, -1000000, 1000000)# X False, O True  
+                        self.moveTable[hashedTable] = currValue
                     self.board.resetCell(row, col)
                     print("This is currValue: {} for row: {} col: {} move: {} is Max : {}".format(currValue, row, col, row * self.board.size + col, self.playerIsFirst))
 
@@ -207,6 +238,7 @@ class Game():
         print("This is the best move " + str(bestMove))
         print("Total number of comparisons " + str(self.totalComp))
         print("Total time taken: " + str(time.time() - start))
+               
         if (counter > 0):
             return random.choice(bestMoves[:counter])
         return bestMove
@@ -342,7 +374,7 @@ class Game():
 
 if __name__ == '__main__':
     # sys.setrecursionlimit(10**8)        
-    g = Game(size=4, goFirst=True, maxDepth=10)
+    g = Game(size=4, goFirst=True, maxDepth=7)
     g.playAI()
     # g.play()
     # g.board.test()
