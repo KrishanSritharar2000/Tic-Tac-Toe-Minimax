@@ -186,93 +186,100 @@ class Board():
             result = 2
         return result
 
-    def checkWin(self, isMaxTurn=True, rowToWin=None):
-        if rowToWin == None:
-            rowToWin = self.size
-
-        token = self.playerTokens[0] if isMaxTurn else self.playerTokens[1]
-        result = 0
-        # check horizontal
-        for i in range(self.size):
-            checkForWin = True
-            nextMoveWinOnLeft = True
-            nextMoveWinOnRight = True
-            for j in range(self.size - 1):
-                checkForWin &= self.board[i][j] == self.board[i][j + 1]
-                if (j != self.size - 2):
-                    nextMoveWinOnLeft &= self.board[i][j] == self.board[i][j + 1]                
-                if (j != 0):
-                    nextMoveWinOnRight &= self.board[i][j] == self.board[i][j + 1]
-            if checkForWin:
-                return 1
-            #if there are (self.size - 1) in a row and other square is empty
-            if ((nextMoveWinOnLeft and self.board[i][0] == token and self.board[i][self.size-1] == str(i * self.size + self.size - 1)) or 
-                (nextMoveWinOnRight and self.board[i][self.size-1] == token and self.board[i][0] == str(i * self.size))):
-                result = 2
-
-        # checkForWin vertical
-        for i in range(self.size):
-            checkForWin = True
-            nextMoveWinOnTop = True
-            nextMoveWinOnBottom = True
-            for j in range(self.size - 1):
-                checkForWin &= self.board[j][i] == self.board[j + 1][i]
-                if (j != 0):
-                    nextMoveWinOnTop &= self.board[j][i] == self.board[j + 1][i]
-                if (j != self.size - 2):
-                    nextMoveWinOnBottom &= self.board[j][i] == self.board[j + 1][i]
-            if checkForWin:
-                return 1
-            #if there are (self.size - 1) in a row 
-            if ((nextMoveWinOnTop and self.board[self.size-1][i] == token and self.board[0][i] == str(i)) or 
-                (nextMoveWinOnBottom and self.board[0][i] == token and self.board[self.size-1][i] == str((self.size - 1) * self.size + i))):
-                result = 2
-
-        # checkForWin leading diagonal
-        checkForWin = True
-        nextMoveWinOnBottomRight = True
-        nextMoveWinOnTopLeft = True
-        for i in range(self.size - 1):
-            checkForWin &= self.board[i][i] == self.board[i + 1][i + 1]
-            if (i != self.size - 2):
-                nextMoveWinOnBottomRight &= self.board[i][i] == self.board[i + 1][i + 1]
-            if (i != 0):
-                nextMoveWinOnTopLeft &= self.board[i][i] == self.board[i + 1][i + 1]
-        if checkForWin:
-            return 1
-        if ((nextMoveWinOnBottomRight and self.board[0][0] == token and self.board[self.size-1][self.size-1] == str((self.size - 1) * self.size + self.size - 1)) or 
-            (nextMoveWinOnTopLeft and self.board[self.size-1][self.size-1] == token and self.board[0][0] == str(0))):
-            result = 2
-        
-        #checkForWin other diagonal
-        checkForWin = True
-        nextMoveWinOnTopRight = True
-        nextMoveWinOnBottomLeft = True
-        for i in range(self.size - 1):
-            checkForWin &= self.board[i][self.size - 1 - i] == self.board[i+1][self.size - i - 2]
-            if (i != 0):
-                nextMoveWinOnTopRight &= self.board[i][self.size - 1 - i] == self.board[i + 1][self.size - i - 2]
-            if (i != self.size - 2):
-                nextMoveWinOnBottomLeft &= self.board[i][self.size - 1 - i] == self.board[i + 1][self.size - i - 2]            
-        if checkForWin:
-            return 1
-        if ((nextMoveWinOnTopRight and self.board[self.size-1][0] == token and self.board[0][self.size - 1] == str(self.size - 1)) or 
-            (nextMoveWinOnBottomLeft and self.board[0][self.size-1] == token and self.board[self.size - 1][0] == str((self.size - 1) * self.size))):
-            result = 2
-        return result
-
-
-
-
     # @staticmethod
     # #Returns the hashed value of the provided board
     # def hashBoard(board):
     #     return hash(tuple([tuple(row) for row in board]))
 
     @staticmethod
-    # #Returns the hashed value of the provided board
+    #Returns the hashed value of the provided board
     def hashBoard(board):
         return "".join(["".join(row) for row in board])
+
+    @staticmethod
+    #Takes in the hash and returns a new hash with the tokens swapped 
+    def hashBoardReverseToken(hashedBoard):
+        for i in len(hashedBoard):
+            if hashedBoard[i] == "O":
+                hashedBoard[i] = "X"
+            elif hashedBoard[i] == "X":
+                hashedBoard[i] = "O"
+        return hashedBoard
+
+    @staticmethod
+    #Takes in the hash and returns the horizontally flipped
+    def hashBoardHorizontalFlip(board):
+        boardToHash = board.clone().board
+        boardToHashCopy = board.clone().board
+        size = board.getSize()
+        for i in size // 2:
+            boardToHash[i] = boardToHashCopy[size - 1 - i]
+            boardToHash[size - 1 - i] = boardToHashCopy[i]
+        for i in size:
+            for j in size:
+                if boardToHash[i][j] not in ["X", "O"]:
+                    boardToHash[i][j] = size * i + j
+        return board.hashBoard(boardToHash)
+
+    @staticmethod
+    #Takes in the hash and returns the vertically flipped
+    def hashBoardVerticalFlip(board):
+        boardToHash = board.clone().board
+        boardToHashCopy = board.clone().board
+        size = board.getSize() 
+        for row in range(size // 2):
+            for col in range(size // 2):
+                if boardToHashCopy[size - 1 - row][col] not in ["X", "O"]:
+                    boardToHash[row][col] = str(size * row + col)
+                else:
+                    boardToHash[row][col] = boardToHashCopy[size - 1 - row][col]
+        return board.hashBoard(boardToHash)
+
+   
+    @staticmethod
+    #Takes in the hash and returns the 90 degree clockwise flipped
+    def hashBoard90Clock(board):
+        boardToHash = board.clone().board
+        boardToHashCopy = board.clone().board
+        size = board.getSize() 
+        for row in range(size):
+            for col in range(size):
+                if boardToHashCopy[size - 1 - col][row] not in ["X", "O"]:
+                    boardToHash[row][col] = str(size * row + col)
+                else:
+                    boardToHash[row][col] = boardToHashCopy[size - 1 - col][row]
+        return board.hashBoard(boardToHash)
+
+    @staticmethod
+    #Takes in the hash and returns the 180 degree clockwise flipped
+    def hashBoard180Clock(board):
+        boardToHash = board.clone().board
+        boardToHashCopy = board.clone().board
+        size = board.getSize() 
+        for row in range(size):
+            for col in range(size):
+                if boardToHashCopy[size - 1 - row][size - 1 - col] not in ["X", "O"]:
+                    boardToHash[row][col] = str(size * row + col)
+                else:
+                    boardToHash[row][col] = boardToHashCopy[size - 1 - row][size - 1 - col]
+        return board.hashBoard(boardToHash)        
+
+    @staticmethod
+    #Takes in the hash and returns the 270 degree clockwise flipped
+    def hashBoard270Clock(board):
+        boardToHash = board.clone().board
+        boardToHashCopy = board.clone().board
+        size = board.getSize() 
+        for row in range(size):
+            for col in range(size):
+                if boardToHashCopy[col][size - 1 - row] not in ["X", "O"]:
+                    boardToHash[row][col] = str(size * row + col)
+                else:
+                    boardToHash[row][col] = boardToHashCopy[col][size - 1 - row]
+        return board.hashBoard(boardToHash)        
+
+
+
 
     #Returns a clone of the current board
     def clone(self):
@@ -288,11 +295,23 @@ class Board():
         self.chosenColours = random.sample(self.tokenColours, self.numOfPlayers)
 
     def test(self):
-        self.board = [['X', '1', '2', '3'],
+        board = Board(4)
+        board.board = [['X', '1', '2', '3'],
                       ['4', 'O', '6', '7'],
                       ['8', 'O', '10', '11'],
                       ['12', 'O', '14', '15']]
+        board.moveCount = 4
+        # self.board = [['X', '1', '2', '3'],
+        #               ['4', 'O', '6', '7'],
+        #               ['8', 'O', '10', '11'],
+        #               ['12', 'O', '14', '15']]
                       
-        self.moveCount = 4
+        # self.moveCount = 4
+        print(Board.hashBoard270Clock(board))
+        board2 = Board(4)
+        board2.board = [['X', '1', '2', '3'],
+                      ['4', 'O', '6', '7'],
+                      ['8', 'O', '10', '11'],
+                      ['12', 'O', '14', '15']]
         #1146973
         #11048697
