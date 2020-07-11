@@ -37,19 +37,24 @@ class Game():
         self.__nextPlayer()
 
     def __getAIMove(self):
-        self.board.move(self.bestMove(), self.board.getPlayerToken(self.playerCounter))
+        self.board.move(self.bestMoveConcurrent(), self.board.getPlayerToken(self.playerCounter))
         self.board.printBoard()
         self.__nextPlayer()
 
     def loadMoveTable(self):
-        tableFile = open(self.tableName, "rb")
-        self.moveTable = pickle.load(tableFile)
-        print("table loaded")
-        tableFile.close()
+        try:
+            tableFile = open(self.tableName, "rb")
+            self.moveTable = pickle.load(tableFile)
+            tableFile.close()
+            print("table loaded, loaded files {}".format(len(self.moveTable)))
+        except FileNotFoundError as e:
+            self.moveTable = {}
+            print("table created")
     
     def saveMoveTable(self):
         tableFile = open(self.tableName, "wb")
         pickle.dump(self.moveTable, tableFile)
+        print("saved file")
         tableFile.close()
 
     def playAI(self):
@@ -94,7 +99,6 @@ class Game():
                     playAgain = False
         finally:
             self.saveMoveTable()
-
     
     def play(self):
         self.playingAI = False
@@ -120,6 +124,8 @@ class Game():
                 playAgain = False
 
     # Maximiser is always the player
+    #288103
+    #376968
     def minimax(self, board: Board, depth: int, maxDepth: int, isMaxTurn: bool, alpha: int, beta: int):
         self.totalComp += 1
 
@@ -133,6 +139,7 @@ class Game():
                 return depth - self.maxScore
             return self.maxScore - depth
         
+        #heuristic checking if opponent can win on next move
         if result == 2:
             if isMaxTurn:
                 return self.maxScore
@@ -140,10 +147,9 @@ class Game():
 
 
         if board.isFull() or depth == maxDepth:
-            return 0
-        
+            return 0 
 
-    
+
         if isMaxTurn:
             best = -1000000
             for row in range(board.getSize()):
@@ -187,6 +193,7 @@ class Game():
         self.moveTable[hashedTable] = best
         return best
 
+
     def bestMove(self):
         bestValue = 1000000 if self.playerIsFirst else -1000000
         bestMove = -1
@@ -197,7 +204,6 @@ class Game():
         if self.board.getMoveCount() == 0:
             print("Total number of comparisons " + str(self.totalComp))
             print("Total time taken: " + str(time.time() - start))
-            return 0
             return random.choice(bestMoves)
 
         for row in range(self.board.size):
@@ -211,8 +217,9 @@ class Game():
                     else:
                         currValue = self.minimax(self.board, 0, self.maxDepth, self.playerIsFirst, -1000000, 1000000)# X False, O True  
                         self.moveTable[hashedTable] = currValue
+
                     self.board.resetCell(row, col)
-                    print("This is currValue: {} for row: {} col: {} move: {} is Max : {}".format(currValue, row, col, row * self.board.size + col, self.playerIsFirst))
+                    print("This is currValue: {} for row: {} col: {} move: {} hash : {}".format(currValue, row, col, row * self.board.size + col, hashedTable))
 
                     if (currValue == bestValue):
                         bestMoves[counter] = row * self.board.size + col
@@ -248,6 +255,11 @@ class Game():
     # @jit
     def minimaxConcurrent(self, board: Board, depth: int, maxDepth: int, isMaxTurn: bool, alpha: int, beta: int, totalComparisons: Value):
         totalComparisons.value += 1
+
+        hashedTable = board.hashBoard(board.board)
+        if hashedTable in self.moveTable:
+            return self.moveTable[hashedTable]
+
         result = board.checkWin(isMaxTurn)
         if result == 1:
             if isMaxTurn:
@@ -302,12 +314,21 @@ class Game():
                 else:
                     continue
                 break
+        self.moveTable[hashedTable] = best
         return best
 
     def callMinimaxConcurrent(self, row, col, board, depth, maxDepth, isMaxTurn, alpha, beta, counter, bestMovesArray, bestValueSingle, totalComparisons, stop):
         board.move(row * board.getSize() + col, self.board.playerTokens[1] if isMaxTurn else self.board.playerTokens[0])
-        currValue = self.minimaxConcurrent(board, depth, maxDepth, isMaxTurn, alpha, beta, totalComparisons)# X False, O True
+
+        #check if in move table
+        hashedTable = self.board.hashBoard(self.board.board)
+        if hashedTable in self.moveTable:
+            currValue = self.moveTable[hashedTable]
+        else:
+            currValue = self.minimaxConcurrent(board, depth, maxDepth, isMaxTurn, alpha, beta, totalComparisons)# X False, O True
+            self.moveTable[hashedTable] = currValue
         print("This is currValue: {} for row: {} col: {} move: {} Maximiser: {}".format(currValue, row, col, row * board.getSize() + col, isMaxTurn))
+
         board.resetCell(row, col)
         with bestValueSingle.get_lock():
             if (currValue == bestValueSingle.value):
@@ -327,7 +348,6 @@ class Game():
             #If there is a win on the next move, stop and dont try any more
             if ((isMaxTurn and bestValueSingle.value == -self.maxScore) or
                 (not isMaxTurn and bestValueSingle.value == self.maxScore)):
-
                 stop[0] = True
 
     def bestMoveConcurrent(self):
@@ -350,11 +370,13 @@ class Game():
             while (not stop[0] and col < self.board.size):
                 if (self.board.isCellEmpty(row, col)):
                     threads.append(Process(target=self.callMinimaxConcurrent, args=(row, col, self.board.clone(), 0, self.maxDepth, self.playerIsFirst, -1000000, 1000000, counter, bestMovesArray, bestValueSingle, totalComp, stop)))
-                    threads[-1].start()
                 col += 1
             row += 1         
 
         print("Total number of threads " + str(len(threads)))
+        for thread in threads:            
+            thread.start()
+
         for thread in threads:
             if stop[0]:
                 for thread in threads:
@@ -374,7 +396,7 @@ class Game():
 
 if __name__ == '__main__':
     # sys.setrecursionlimit(10**8)        
-    g = Game(size=4, goFirst=True, maxDepth=7)
+    g = Game(size=5, goFirst=True, maxDepth=10)
     g.playAI()
     # g.play()
     # g.board.test()
