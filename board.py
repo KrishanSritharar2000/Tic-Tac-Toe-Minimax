@@ -199,12 +199,7 @@ class Board():
     @staticmethod
     #Takes in the hash and returns a new hash with the tokens swapped 
     def hashBoardReverseToken(hashedBoard):
-        for i in len(hashedBoard):
-            if hashedBoard[i] == "O":
-                hashedBoard[i] = "X"
-            elif hashedBoard[i] == "X":
-                hashedBoard[i] = "O"
-        return hashedBoard
+        return hashedBoard.replace("X", "%").replace("O", "X").replace("%", "O")
 
     @staticmethod
     #Takes in the hash and returns the horizontally flipped
@@ -212,13 +207,13 @@ class Board():
         boardToHash = board.clone().board
         boardToHashCopy = board.clone().board
         size = board.getSize()
-        for i in size // 2:
+        for i in range(size // 2):
             boardToHash[i] = boardToHashCopy[size - 1 - i]
             boardToHash[size - 1 - i] = boardToHashCopy[i]
-        for i in size:
-            for j in size:
+        for i in range(size):
+            for j in range(size):
                 if boardToHash[i][j] not in ["X", "O"]:
-                    boardToHash[i][j] = size * i + j
+                    boardToHash[i][j] = str(size * i + j)
         return board.hashBoard(boardToHash)
 
     @staticmethod
@@ -227,12 +222,16 @@ class Board():
         boardToHash = board.clone().board
         boardToHashCopy = board.clone().board
         size = board.getSize() 
-        for row in range(size // 2):
-            for col in range(size // 2):
-                if boardToHashCopy[size - 1 - row][col] not in ["X", "O"]:
+        for row in range(size):
+            for col in range(size):
+                if boardToHashCopy[row][size - 1 - col] not in ["X", "O"]:
                     boardToHash[row][col] = str(size * row + col)
                 else:
-                    boardToHash[row][col] = boardToHashCopy[size - 1 - row][col]
+                    boardToHash[row][col] = boardToHashCopy[row][size - 1 - col]
+                if boardToHashCopy[row][col] not in ["X", "O"]:
+                    boardToHash[row][size - 1 - col] = str(size * row + size - 1 - col)
+                else:
+                    boardToHash[row][size - 1 - col] = boardToHashCopy[row][col]
         return board.hashBoard(boardToHash)
 
    
@@ -307,7 +306,7 @@ class Board():
         #               ['12', 'O', '14', '15']]
                       
         # self.moveCount = 4
-        print(Board.hashBoard270Clock(board))
+        print(Board.hashBoardReverseToken(Board.hashBoardVerticalFlip(board)))
         board2 = Board(4)
         board2.board = [['X', '1', '2', '3'],
                       ['4', 'O', '6', '7'],
