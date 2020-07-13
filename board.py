@@ -134,7 +134,6 @@ class Board():
             if ((nextMoveWinOnLeft and self.board[i][0] == token and self.board[i][self.size-1] == str(i * self.size + self.size - 1)) or 
                 (nextMoveWinOnRight and self.board[i][self.size-1] == token and self.board[i][0] == str(i * self.size))):
                 result = 2
-
         # checkForWin vertical
         for i in range(self.size):
             checkForWin = True
@@ -185,6 +184,84 @@ class Board():
             (nextMoveWinOnBottomLeft and self.board[0][self.size-1] == token and self.board[self.size - 1][0] == str((self.size - 1) * self.size))):
             result = 2
         return result
+
+
+    #Return Values:
+    # 0 - nothing
+    # 1 - win on current board
+    # 2 - can win on next move
+    def checkWin1(self, isMaxTurn=True):
+        token = self.playerTokens[0] if isMaxTurn else self.playerTokens[1]
+        result = 0
+        # check horizontal
+        for i in range(self.size):
+            checkForWin = True
+            nextMoveWinOnLeft = True
+            nextMoveWinOnRight = True
+            for j in range(self.size - 1):
+                checkForWin &= self.board[i][j] == self.board[i][j + 1]
+                if (j != self.size - 2):
+                    nextMoveWinOnLeft &= self.board[i][j] == self.board[i][j + 1]                
+                if (j != 0):
+                    nextMoveWinOnRight &= self.board[i][j] == self.board[i][j + 1]
+            if checkForWin:
+                return 1
+            #if there are (self.size - 1) in a row and other square is empty
+            if ((nextMoveWinOnLeft and self.board[i][0] == token and self.board[i][self.size-1] == str(i * self.size + self.size - 1)) or 
+                (nextMoveWinOnRight and self.board[i][self.size-1] == token and self.board[i][0] == str(i * self.size))):
+                result = 2
+        # checkForWin vertical
+        for i in range(self.size):
+            checkForWin = True
+            nextMoveWinOnTop = True
+            nextMoveWinOnBottom = True
+            for j in range(self.size - 1):
+                checkForWin &= self.board[j][i] == self.board[j + 1][i]
+                if (j != 0):
+                    nextMoveWinOnTop &= self.board[j][i] == self.board[j + 1][i]
+                if (j != self.size - 2):
+                    nextMoveWinOnBottom &= self.board[j][i] == self.board[j + 1][i]
+            if checkForWin:
+                return 1
+            #if there are (self.size - 1) in a row 
+            if ((nextMoveWinOnTop and self.board[self.size-1][i] == token and self.board[0][i] == str(i)) or 
+                (nextMoveWinOnBottom and self.board[0][i] == token and self.board[self.size-1][i] == str((self.size - 1) * self.size + i))):
+                result = 2
+
+        # checkForWin leading diagonal
+        checkForWin = True
+        nextMoveWinOnBottomRight = True
+        nextMoveWinOnTopLeft = True
+        for i in range(self.size - 1):
+            checkForWin &= self.board[i][i] == self.board[i + 1][i + 1]
+            if (i != self.size - 2):
+                nextMoveWinOnBottomRight &= self.board[i][i] == self.board[i + 1][i + 1]
+            if (i != 0):
+                nextMoveWinOnTopLeft &= self.board[i][i] == self.board[i + 1][i + 1]
+        if checkForWin:
+            return 1
+        if ((nextMoveWinOnBottomRight and self.board[0][0] == token and self.board[self.size-1][self.size-1] == str((self.size - 1) * self.size + self.size - 1)) or 
+            (nextMoveWinOnTopLeft and self.board[self.size-1][self.size-1] == token and self.board[0][0] == str(0))):
+            result = 2
+        
+        #checkForWin other diagonal
+        checkForWin = True
+        nextMoveWinOnTopRight = True
+        nextMoveWinOnBottomLeft = True
+        for i in range(self.size - 1):
+            checkForWin &= self.board[i][self.size - 1 - i] == self.board[i+1][self.size - i - 2]
+            if (i != 0):
+                nextMoveWinOnTopRight &= self.board[i][self.size - 1 - i] == self.board[i + 1][self.size - i - 2]
+            if (i != self.size - 2):
+                nextMoveWinOnBottomLeft &= self.board[i][self.size - 1 - i] == self.board[i + 1][self.size - i - 2]            
+        if checkForWin:
+            return 1
+        if ((nextMoveWinOnTopRight and self.board[self.size-1][0] == token and self.board[0][self.size - 1] == str(self.size - 1)) or 
+            (nextMoveWinOnBottomLeft and self.board[0][self.size-1] == token and self.board[self.size - 1][0] == str((self.size - 1) * self.size))):
+            result = 2
+        return result
+
+
 
     # @staticmethod
     # #Returns the hashed value of the provided board
