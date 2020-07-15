@@ -20,9 +20,12 @@ def printData(filename):
     print(len(dict1))
     print(dict1.keys())
     print(dict1.values())
-
-createFile("3size3inRow", {})
-printData("3size3inRow")
+# printData("3size3inRow")
+# createFile("3size3inRow", {})
+# printData("3size3inRow")
 
 # createFile("4size4inRow", {})
-# printData("4size4inRow")
+# printData("4size4inRow") 
+
+# createFile("5size5inRow", {})
+# printData("5size5inRow") 

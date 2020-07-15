@@ -60,6 +60,72 @@ class Game():
         print("saved file size {}".format(len(self.moveTable)))
         tableFile.close()
 
+    def trainRandom(self, loops):
+        start = time.time()
+        self.playingAI = True
+        playAgain = 0
+        first = 0
+        second = 0
+        try:
+            while playAgain < loops:
+                self.board.clear()
+                self.board.printBoard()
+                #below for AI vs AI
+                # self.playerCounter = 1 if self.playerIsFirst else 0
+                self.playerCounter = 0
+                draw = True
+                self.playerIsFirst = False
+                self.__getAIMove()
+                while (not self.board.isFull()):
+                    #Get first move from AI
+                    self.playerIsFirst = True
+                    # self.__getAIMove()
+                    moves = []
+                    for row in range(self.board.size):
+                        for col in range(self.board.size):
+                            if self.board.isCellEmpty(row, col):
+                                moves.append(row * self.board.size + col)
+                    self.board.move(random.choice(moves), self.board.getPlayerToken(self.playerCounter))
+                    self.board.printBoard()
+                    self.__nextPlayer()
+                    if (self.board.checkWin() == 1):
+                        print("\033[0mThe AI going second has won the game!")
+                        second += 1
+                        draw = False
+                        break
+                    #Make second AI move
+                    if not self.board.isFull():
+                        self.playerIsFirst = False
+                        self.__getAIMove()
+                        # moves = []
+                        # for row in range(self.board.size):
+                        #     for col in range(self.board.size):
+                        #         if self.board.isCellEmpty(row, col):
+                        #             moves.append(row * self.board.size + col)
+                        # self.board.move(random.choice(moves), self.board.getPlayerToken(self.playerCounter))
+                        # self.board.printBoard()
+                        # self.__nextPlayer()
+
+                        #below for AI vs AI
+                        # self.playerIsFirst = not self.playerIsFirst
+                        if (self.board.checkWin() == 1):
+                            print("\033[0mThe AI going first has won the game!")
+                            first += 1
+                            draw = False
+                            break
+                        self.totalComp = 0
+
+                if (draw):
+                    print("\033[0mThe game has ended in a draw!")
+                playAgain += 1
+                print("New game")
+        finally:
+            self.saveMoveTable() 
+            print("Time Taken {}".format(time.time()- start))  
+            print("First Won {} Second Won {}".format(first, second))   
+
+
+
     def train(self, loops):
         start = time.time()
         self.playingAI = True
@@ -173,7 +239,7 @@ class Game():
             if answer in ("no", "n"):
                 playAgain = False
 
-    def inMoveTable(self, board, reverse=False):
+    def inMoveTableWork(self, board, reverse=False):
         if reverse:
             reversedTable = Board.hashBoardReverseToken(Board.hashBoard(board.board))
             if reversedTable in self.moveTable:
@@ -230,7 +296,41 @@ class Game():
                 return self.moveTable[hashedTable]
         
         return None
+
+    def inMoveTable(self, board, reverse=False):
+        #Normal Hash
+        hashedTable = Board.hashBoard(board.board)
+        if hashedTable in self.moveTable:
+            return self.moveTable[hashedTable]
     
+        #Horizontal Flip
+        hashedTable = Board.hashBoardHorizontalFlip(board)
+        if hashedTable in self.moveTable:
+            return self.moveTable[hashedTable]
+        
+        #Vertical Flip
+        hashedTable = Board.hashBoardVerticalFlip(board)
+        if hashedTable in self.moveTable:
+            return self.moveTable[hashedTable]
+        
+        #90 Degree Rotation
+        hashedTable = Board.hashBoard90Clock(board)
+        if hashedTable in self.moveTable:
+            return self.moveTable[hashedTable]
+        
+        #180 Degree Rotation
+        hashedTable = Board.hashBoard180Clock(board)
+        if hashedTable in self.moveTable:
+            return self.moveTable[hashedTable]
+        
+        #270 Degree Rotation
+        hashedTable = Board.hashBoard270Clock(board)
+        if hashedTable in self.moveTable:
+            return self.moveTable[hashedTable]
+        
+        return None
+  
+
     def inMoveTable2(self, board, reverse=False):
         result = self.inMoveTableHelper(board)
         if reverse:
@@ -303,9 +403,9 @@ class Game():
     def minimax(self, board: Board, depth: int, maxDepth: int, isMaxTurn: bool, alpha: int, beta: int):
         self.totalComp += 1
 
-        # hashedResult = self.inMoveTable(board, isMaxTurn)
-        # if hashedResult is not None:
-        #     return hashedResult
+        hashedResult = self.inMoveTable(board, isMaxTurn)
+        if hashedResult is not None:
+            return hashedResult
 
         result = board.checkWin(isMaxTurn)
         if result == 1:
@@ -332,8 +432,16 @@ class Game():
                         # TODO: refactor player token out 
                         # Make the move
                         board.move(row * board.getSize() + col, board.playerTokens[0])
-                        # Recurisively perform minimax and find the max
-                        currValue = self.minimax(board, depth + 1, maxDepth, False, alpha, beta)
+                        
+                        hashedResult = self.inMoveTable(board, self.playerIsFirst)
+                        if hashedResult is not None:
+                            currValue = hashedResult
+                        else:
+                            # Recurisively perform minimax and find the max
+                            currValue = self.minimax(board, depth + 1, maxDepth, False, alpha, beta)
+                            self.moveTable[Board.hashBoard(board.board)] = currValue
+                        # currValue = self.minimax(board, depth + 1, maxDepth, False, alpha, beta)
+
                         best = max(best, currValue)
                         #undo the move
                         board.resetCell(row, col)
@@ -352,8 +460,16 @@ class Game():
                         # TODO: refactor player token out 
                         # Make the move
                         board.move(row * board.getSize() + col, board.playerTokens[1])
-                        # Recurisively perform minimax and find the max
-                        currValue = self.minimax(board, depth + 1, maxDepth, True, alpha, beta)
+
+                        hashedResult = self.inMoveTable(board, self.playerIsFirst)
+                        if hashedResult is not None:
+                            currValue = hashedResult
+                        else:
+                            # Recurisively perform minimax and find the max
+                            currValue = self.minimax(board, depth + 1, maxDepth, True, alpha, beta)
+                            self.moveTable[Board.hashBoard(board.board)] = currValue
+                        # currValue = self.minimax(board, depth + 1, maxDepth, True, alpha, beta)
+                            
                         best = min(best, currValue)
                         #undo the move
                         board.resetCell(row, col)
@@ -364,10 +480,10 @@ class Game():
                 else:
                     continue
                 break
-        if isMaxTurn:
-            self.moveTable[Board.hashBoardReverseToken(Board.hashBoard(board.board))] = best
-        else:
-            self.moveTable[Board.hashBoard(board.board)] = best
+        # if isMaxTurn:
+        #     self.moveTable[Board.hashBoardReverseToken(Board.hashBoard(board.board))] = best
+        # else:
+        #     self.moveTable[Board.hashBoard(board.board)] = best
         return best
 
 
@@ -388,21 +504,17 @@ class Game():
                 if (self.board.isCellEmpty(row, col)):
                     self.board.move(row * self.board.getSize() + col, self.board.playerTokens[1] if self.playerIsFirst else self.board.playerTokens[0])
                     # check if in move table
-                    # hashedResult = self.inMoveTable(self.board, self.playerIsFirst)
-                    # if hashedResult is not None:
-                    #     currValue = hashedResult
-                    # else:
-                    #     currValue = self.minimax(self.board, 0, self.maxDepth, self.playerIsFirst, -1000000, 1000000)# X False, O True  
-                    #     if self.inMoveTable(self.board, self.playerIsFirst) is None:
-                    #         if self.playerIsFirst:
-                    #             self.moveTable[Board.hashBoardReverseToken(Board.hashBoard(self.board.board))] = currValue
-                    #         else:
-                    #             self.moveTable[Board.hashBoard(self.board.board)] = currValue
+                    hashedResult = self.inMoveTable(self.board, self.playerIsFirst)
+                    if hashedResult is not None:
+                        currValue = hashedResult
+                    else:
+                        currValue = self.minimax(self.board, 0, self.maxDepth, self.playerIsFirst, -1000000, 1000000)# X False, O True  
+                        self.moveTable[Board.hashBoard(self.board.board)] = currValue
                             
-                    currValue = self.minimax(self.board, 0, self.maxDepth, self.playerIsFirst, -1000000, 1000000)# X False, O True  
+                    # currValue = self.minimax(self.board, 0, self.maxDepth, self.playerIsFirst, -1000000, 1000000)# X False, O True  
 
                     self.board.resetCell(row, col)
-                    print("This is currValue: {} for row: {} col: {} move: {} max: {} hash : {}".format(currValue, row, col, row * self.board.size + col, self.playerIsFirst, 0))
+                    print("This is currValue: {} for row: {} col: {} move: {} max: {} hash : {}".format(currValue, row, col, row * self.board.size + col, self.playerIsFirst, hashedResult))
 
                     if (currValue == bestValue):
                         bestMoves[counter] = row * self.board.size + col
@@ -466,8 +578,17 @@ class Game():
                         # TODO: refactor player token out 
                         # Make the move
                         board.move(row * board.getSize() + col, board.playerTokens[0])
+                        
+                        hashedResult = self.inMoveTable(board, self.playerIsFirst)
+                        if hashedResult is not None:
+                            currValue = hashedResult
+                        else:
+                            # Recurisively perform minimax and find the max
+                            currValue = self.minimax(board, depth + 1, maxDepth, False, alpha, beta)
+                            self.moveTable[Board.hashBoard(board.board)] = currValue
+                        
                         # Recurisively perform minimax and find the max
-                        currValue = self.minimaxConcurrent(board, depth + 1, maxDepth, False, alpha, beta, totalComparisons)
+                        # currValue = self.minimaxConcurrent(board, depth + 1, maxDepth, False, alpha, beta, totalComparisons)
                         best = max(best, currValue)
                         #undo the move
                         board.resetCell(row, col)
@@ -486,8 +607,16 @@ class Game():
                         # TODO: refactor player token out 
                         # Make the move
                         board.move(row * board.getSize() + col, board.playerTokens[1])
+                        
+                        hashedResult = self.inMoveTable(board, self.playerIsFirst)
+                        if hashedResult is not None:
+                            currValue = hashedResult
+                        else:
+                            # Recurisively perform minimax and find the max
+                            currValue = self.minimax(board, depth + 1, maxDepth, True, alpha, beta)
+                            self.moveTable[Board.hashBoard(board.board)] = currValue
                         # Recurisively perform minimax and find the max
-                        currValue = self.minimaxConcurrent(board, depth + 1, maxDepth, True, alpha, beta, totalComparisons)
+                        # currValue = self.minimaxConcurrent(board, depth + 1, maxDepth, True, alpha, beta, totalComparisons)
                         best = min(best, currValue)
                         #undo the move
                         board.resetCell(row, col)
@@ -498,10 +627,6 @@ class Game():
                 else:
                     continue
                 break
-        if isMaxTurn:
-            self.moveTable[Board.hashBoardReverseToken(Board.hashBoard(board.board))] = best
-        else:
-            self.moveTable[Board.hashBoard(board.board)] = best
         return best
 
     def callMinimaxConcurrent(self, row, col, board, depth, maxDepth, isMaxTurn, alpha, beta, counter, bestMovesArray, bestValueSingle, totalComparisons, stop):
@@ -513,10 +638,7 @@ class Game():
             currValue = hashedResult
         else:
             currValue = self.minimax(board, depth, maxDepth, isMaxTurn, alpha, beta)# X False, O True  
-            if isMaxTurn:
-                self.moveTable[Board.hashBoardReverseToken(Board.hashBoard(board.board))] = currValue
-            else:
-                self.moveTable[Board.hashBoard(board.board)] = currValue
+            self.moveTable[Board.hashBoard(self.board.board)] = currValue
                             
         print("This is currValue: {} for row: {} col: {} move: {} Maximiser: {}".format(currValue, row, col, row * board.getSize() + col, isMaxTurn))
 
@@ -588,10 +710,22 @@ class Game():
 
 if __name__ == '__main__':
     # sys.setrecursionlimit(10**8)        
-    g = Game(size=3, goFirst=True, maxDepth=10, concurrent=False)
+    g = Game(size=5, goFirst=True, maxDepth=5, concurrent=False)
     # g.playAI()
+    # g.trainRandom(10)
+    g.train(3)
 
-    # g.train(100)
+    #2327 seconds
+    #56390 size
+    #playing
+    #69343
+    #105000
+    #300000
+    #440261
+    #745629
+    #890000
+    #896224 took 3460 seconds first won 11 second won 39
+
 
     #before reducing size 2400
     #after 600
@@ -612,7 +746,7 @@ if __name__ == '__main__':
     # g.maxScore = 4 * 4 + 1
     board = Board(3)
     board.board = [['0', 'O', '2'],
-                    ['O', 'X', 'X'],
+                    ['X', 'X', 'O'],
                     ['6', '7', '8']]
     #print("Hash", g.moveTable[Board.hashBoard(board.board)])
     # print("Hashed", Board.hashBoard(board.board))
@@ -649,9 +783,18 @@ if __name__ == '__main__':
     # print("Value 2 ", currValue2)
     # print("Value 3 ", currValue3)
 
-    g.board = board
-    g.playerIsFirst = True
-    bestMove1 = g.bestMove()
+    # g.board = board
+    # g.playerIsFirst = False
+    # bestMove1 = g.bestMove()
+    # print("Best move 1", bestMove1)
+    # board.printBoard()
+    # print("")
+    
+    # g.playerIsFirst = False
+    # bestMove1 = g.bestMove()
+    # print("Best move 1", bestMove1)
+    # board.printBoard()
+
     # g.saveMoveTable()
     # g.board = board2
     # g.playerIsFirst = True
@@ -661,8 +804,6 @@ if __name__ == '__main__':
     # bestMove3 = g.bestMove()
     # g.board.printBoard()
     
-    print("Best move 1", bestMove1)
-    board.printBoard()
     # print("Best move 2", bestMove2)
     # print("Best move 3", bestMove3)
 
