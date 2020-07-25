@@ -5,7 +5,7 @@ from multiprocessing import Process, Value, Array
 
 class TicTacToe():
 
-    def __init__(self, size=3, players=2, goFirst=True, maxDepth=1000000, concurrent=True, playAI=False):
+    def __init__(self, size=3, players=2, goFirst=True, maxDepth=1000000, concurrent=True, playAI=False, grapical=None):
         assert (players > 0 and players <=6), "Only between 1 and 6 players allowed" 
         self.numOfPlayers = players
         self.playerIsFirst = goFirst
@@ -18,10 +18,11 @@ class TicTacToe():
         self.maxScore = self.board.getSize() * self.board.getSize() + 1
         self.tableName = str(size) + "size" + str(size) + "inRow"
         self.loadMoveTable()
-        if playAI:
-            self.playAI()
-        else:
-            self.play()
+        self.graphicalGame = grapical
+        # if playAI:
+        #     self.playAI()
+        # else:
+        #     self.play()
 
 
     def __nextPlayer(self):
@@ -64,6 +65,40 @@ class TicTacToe():
         pickle.dump(self.moveTable, tableFile)
         print("saved file size {}".format(len(self.moveTable)))
         tableFile.close()
+
+    def getGraphicalMove(self):
+        while(not self.graphicalGame.moveGiven):
+            print("doing")
+            self.graphicalGame.getMove()
+        self.board.move(self.graphicalGame.moveGivenBoard, self.board.getPlayerToken(self.playerCounter))
+        self.__nextPlayer()
+        self.graphicalGame.moveGiven = False
+
+
+
+    def playGraphicalAI(self):
+        self.board.clear()
+        self.playerCounter = 0
+        draw = True
+        if self.playerIsFirst:
+            self.getGraphicalMove()
+        self.__getAIMove()
+        while (not self.board.isFull()):
+            #Get move from player
+            self.getGraphicalMove()
+            if (self.board.checkWin() == 1):
+                draw = False
+                return 0
+            #Make AI move
+            if not self.board.isFull():
+                self.__getAIMove()
+                if (self.board.checkWin() == 1):
+                    draw = False
+                    return 1
+                self.totalComp = 0
+
+        if (draw):
+            return -1
 
     def trainRandom(self, loops):
         start = time.time()
@@ -554,7 +589,7 @@ class TicTacToe():
 
 if __name__ == '__main__':
     g = TicTacToe(size=4, goFirst=True, maxDepth=10, concurrent=False, playAI=False)
-    g.playAI()
+    # g.playAI()
     # g.trainRandom(100)
     # g.train(3)
 
