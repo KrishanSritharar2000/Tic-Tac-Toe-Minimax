@@ -2,7 +2,6 @@ import sys, time, ctypes, pickle
 from board import *
 from multiprocessing import Process, Value, Array
 
-
 class TicTacToe():
 
     def __init__(self, size=3, players=2, goFirst=True, maxDepth=1000000, concurrent=True, playAI=False, grapical=None):
@@ -19,10 +18,6 @@ class TicTacToe():
         self.tableName = str(size) + "size" + str(size) + "inRow"
         self.loadMoveTable()
         self.graphicalGame = grapical
-        # if playAI:
-        #     self.playAI()
-        # else:
-        #     self.play()
 
 
     def __nextPlayer(self):
@@ -55,7 +50,7 @@ class TicTacToe():
             tableFile = open(self.tableName, "rb")
             self.moveTable = pickle.load(tableFile)
             tableFile.close()
-            print("table loaded, loaded files {}".format(len(self.moveTable)))
+            # print("table loaded, loaded files {}".format(len(self.moveTable)))
         except FileNotFoundError as e:
             self.moveTable = {}
             print("table created")
@@ -70,12 +65,24 @@ class TicTacToe():
         while(not self.graphicalGame.moveGiven and not self.graphicalGame.goBack):
             self.graphicalGame.getMove()
         if not self.graphicalGame.goBack:
-            print("The move is ", self.graphicalGame.moveGivenBoard)
             self.board.move(self.graphicalGame.moveGivenBoard, self.board.getPlayerToken(self.playerCounter))
             self.__nextPlayer()
             self.graphicalGame.moveGiven = False
 
+    def playGraphical(self):
+        self.board.clear()
+        self.playerCounter = 0
+        draw = True
+        while (not self.board.isFull() and not self.graphicalGame.goBack):
+            #Get move from player
+            self.getGraphicalMove()
+            if (self.board.checkWin() == 1):
+                draw = False
+                return ((self.playerCounter - 1) % self.numOfPlayers + 1)
 
+        if (draw):
+            return -1
+        self.saveMoveTable()
 
     def playGraphicalAI(self):
         self.board.clear()
@@ -387,8 +394,8 @@ class TicTacToe():
         counter = 0
         start = time.time()
         if self.board.getMoveCount() == 1 and self.board.board[self.board.size // 2][self.board.size // 2] !=  str((self.board.size * self.board.size) // 2):
-            print("Total number of comparisons " + str(self.totalComp))
-            print("Total time taken: " + str(time.time() - start))
+            # print("Total number of comparisons " + str(self.totalComp))
+            # print("Total time taken: " + str(time.time() - start))
             return random.choice(corners)
 
         for row in range(self.board.size):
@@ -404,7 +411,7 @@ class TicTacToe():
                         self.moveTable[Board.hashBoard(self.board.board)] = currValue
 
                     self.board.resetCell(row, col)
-                    print("This is currValue: {} for row: {} col: {} move: {} max: {} hash : {}".format(currValue, row, col, row * self.board.size + col, self.playerIsFirst, hashedResult))
+                    # print("This is currValue: {} for row: {} col: {} move: {} max: {} hash : {}".format(currValue, row, col, row * self.board.size + col, self.playerIsFirst, hashedResult))
 
                     if (currValue == bestValue):
                         bestMoves[counter] = row * self.board.size + col
@@ -426,9 +433,9 @@ class TicTacToe():
                 continue
             break
 
-        print("This is the best move " + str(bestMoves[:counter]))
-        print("Total number of comparisons " + str(self.totalComp))
-        print("Total time taken: " + str(time.time() - start))
+        # print("This is the best move " + str(bestMoves[:counter]))
+        # print("Total number of comparisons " + str(self.totalComp))
+        # print("Total time taken: " + str(time.time() - start))
                
         if (counter > 0):
             return random.choice(bestMoves[:counter])
@@ -548,8 +555,8 @@ class TicTacToe():
         start = time.time()
         corners = [0, self.board.size-1, (self.board.size*self.board.size)- self.board.size, (self.board.size*self.board.size)-1]
         if self.board.getMoveCount() == 1 and self.board.board[self.board.size // 2][self.board.size // 2] !=  str((self.board.size * self.board.size) // 2):
-            print("Total number of comparisons " + str(self.totalComp))
-            print("Total time taken: " + str(time.time() - start))
+            # print("Total number of comparisons " + str(self.totalComp))
+            # print("Total time taken: " + str(time.time() - start))
             return random.choice(corners)
 
         bestValueSingle = Value(ctypes.c_long, 1000000 if self.playerIsFirst else -1000000)
@@ -568,7 +575,7 @@ class TicTacToe():
                 col += 1
             row += 1         
 
-        print("Total number of threads " + str(len(threads)))
+        # print("Total number of threads " + str(len(threads)))
         for thread in threads:            
             thread.start()
 
@@ -582,9 +589,9 @@ class TicTacToe():
 
         with counter.get_lock():
             with bestMovesArray.get_lock():
-                print("This is the best move " + str(bestMovesArray[0]))
-                print("Total number of comparisons " + str(totalComp.value))
-                print("Total time taken: " + str(time.time() - start))
+                # print("This is the best move " + str(bestMovesArray[0]))
+                # print("Total number of comparisons " + str(totalComp.value))
+                # print("Total time taken: " + str(time.time() - start))
                 if (counter.value > 0):
                     return random.choice(bestMovesArray[:counter.value])
                 return bestMovesArray[0]
@@ -597,7 +604,7 @@ if __name__ == '__main__':
 
     #2327 seconds
     #56390 size
-    #playing
+    #increase of move table after each training session
     #69343
     #105000
     #300000
@@ -605,8 +612,3 @@ if __name__ == '__main__':
     #745629
     #890000
     #896224 took 3460 seconds first won 11 second won 39
-
-
-    #before reducing size 2400
-    #after 600
-    #then 343

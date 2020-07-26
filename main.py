@@ -12,13 +12,11 @@ class Game:#Game class is created
         self.font = pg.font.SysFont("helvetica",20)
         self.numOfPlayers = 2
         self.size = 3
-        # self.clicked = [False for _ in range(12)]
-        # self.clicked[self.numOfPlayers] = True
-        # self.clicked[7 + self.size - 1] = True
         self.playerIsFirst = True
         self.goToMenu()
         self.loadImages()
         self.goBack = False
+        self.playAI = False
 
 
     def loadImages(self):
@@ -28,6 +26,10 @@ class Game:#Game class is created
 
         self.tokenImages[0] =  pg.image.load(path.join(self.imgFolder, 'Xsymbol.png')).convert_alpha()
         self.tokenImages[1] =  pg.image.load(path.join(self.imgFolder, 'Osymbol.png')).convert_alpha()
+        self.tokenImages[2] =  pg.image.load(path.join(self.imgFolder, 'Starsymbol.png')).convert_alpha()
+        self.tokenImages[3] =  pg.image.load(path.join(self.imgFolder, 'Plussymbol.png')).convert_alpha()
+        self.tokenImages[4] =  pg.image.load(path.join(self.imgFolder, 'ampersandsymbol.png')).convert_alpha()
+        self.tokenImages[5] =  pg.image.load(path.join(self.imgFolder, 'equalsymbol.png')).convert_alpha()
 
 
     def text(self, msg, x, y, w, h, colour, size=None):
@@ -71,7 +73,7 @@ class Game:#Game class is created
 
     def run(self):#main game loop
         self.playing = True
-        while self.playing:#keeps calling 'events', 'update' and 'draw' function until game is closed
+        while self.playing:#keeps calling 'events and 'draw' function until game is closed
             self.events()
             self.draw()
 
@@ -79,7 +81,6 @@ class Game:#Game class is created
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.playing = False
-                # pg.quit()#when while loop has stopped, call 'quit' function to unitialse and exit pygame
     
     def draw(self):
         pg.display.set_caption("{:.2f}".format(self.clock.get_fps()))
@@ -126,22 +127,32 @@ class Game:#Game class is created
             self.play = False
             self.moveGiven = False       
             pg.display.flip()
-            result = self.game.playGraphicalAI()
-            if result == 0:
-                self.text("Player has Won!", WIDTH/2, 2*HEIGHT/16, WIDTH, HEIGHT/16, TEXT_COLOUR, 24)
-            elif result == 1:
-                self.text("AI has Won!", WIDTH/2, 2*HEIGHT/16, WIDTH, HEIGHT/16, TEXT_COLOUR, 24)
-            elif result == -1:
-                self.text("The game is a Draw!", WIDTH/2, 2*HEIGHT/16, WIDTH, HEIGHT/16, TEXT_COLOUR, 24)
+            if self.playAI:
+                pg.draw.rect(self.screen, BG_COLOUR, (0, 14*HEIGHT/16, WIDTH, 2*HEIGHT/16))
+                result = self.game.playGraphicalAI()
+                if result == 0:
+                    self.text("Player has Won!", WIDTH/2, 2*HEIGHT/16, WIDTH, HEIGHT/16, TEXT_COLOUR, 24)
+                elif result == 1:
+                    self.text("AI has Won!", WIDTH/2, 2*HEIGHT/16, WIDTH, HEIGHT/16, TEXT_COLOUR, 24)
+                elif result == -1:
+                    self.text("The game is a Draw!", WIDTH/2, 2*HEIGHT/16, WIDTH, HEIGHT/16, TEXT_COLOUR, 24)
+            else:
+                self.text("Player 1's Turn", WIDTH/2, 15*HEIGHT/16, WIDTH, HEIGHT/16, TEXT_COLOUR, 24)
+                result = self.game.playGraphical()
+                if result == -1:
+                    self.text("The game is a Draw!", WIDTH/2, 2*HEIGHT/16, WIDTH, HEIGHT/16, TEXT_COLOUR, 24)
+                else:
+                    self.text("Player {} has Won!".format(result), WIDTH/2, 2*HEIGHT/16, WIDTH, HEIGHT/16, TEXT_COLOUR, 24)
+                pg.draw.rect(self.screen, BG_COLOUR, (0, 14*HEIGHT/16, WIDTH, 2*HEIGHT/16))
+                           
             self.getMove()
-        self.button("Restart", 9*WIDTH/10, 2*HEIGHT/16, WIDTH/8, HEIGHT/8, (0, 255, 0), (0, 175, 0), self.playerVsAI, 12)
+        self.button("Restart", 9*WIDTH/10, 2*HEIGHT/16, WIDTH/8, HEIGHT/8, (0, 255, 0), (0, 175, 0), self.playerVsAI if self.playAI else self.playerVsPlayer, 12)
         self.button("Back", 1*WIDTH/10, 2*HEIGHT/16, WIDTH/8, HEIGHT/8, (0, 255, 0), (0, 175, 0), self.goToMenu, 13)
         pg.display.flip()
 
-            
 
     def getMove(self):
-        self.button("Restart", 9*WIDTH/10, 2*HEIGHT/16, WIDTH/8, HEIGHT/8, (0, 255, 0), (0, 175, 0), self.playerVsAI, 12)
+        self.button("Restart", 9*WIDTH/10, 2*HEIGHT/16, WIDTH/8, HEIGHT/8, (0, 255, 0), (0, 175, 0), self.playerVsAI if self.playAI else self.playerVsPlayer, 12)
         self.button("Back", 1*WIDTH/10, 2*HEIGHT/16, WIDTH/8, HEIGHT/8, (0, 255, 0), (0, 175, 0), self.goToMenu, 13, True)
         if self.clicked[13]:
             self.goBack = True
@@ -160,7 +171,11 @@ class Game:#Game class is created
                     if self.buttonClick[row * self.game.board.size + col]:
                         self.moveGiven = True
                         self.moveGivenBoard = row * self.game.board.size + col
-                else:
+                        if not self.playAI:
+                            pg.draw.rect(self.screen, BG_COLOUR, (0, 14*HEIGHT/16, WIDTH, 2*HEIGHT/16))
+                            self.text("Player {}'s Turn".format(((self.game.playerCounter+1) % self.numOfPlayers + 1)), WIDTH/2, 15*HEIGHT/16, WIDTH, HEIGHT/16, TEXT_COLOUR, 24)
+
+                else: 
                     image = pg.transform.scale(self.tokenImages[self.game.board.playerTokens.index(self.game.board.board[row][col])], (int(WIDTH/length), int(HEIGHT/length)))
                     
                     rect = image.get_rect()
@@ -198,6 +213,7 @@ class Game:#Game class is created
     def playerVsAI(self):
         self.currentScreen = self.gameScreen
         self.play = True
+        self.playAI = True
         self.clicked[12] = False
         self.buttonClick = [False for _ in range(self.size * self.size)]
         self.game = TicTacToe(self.size, 2, self.playerIsFirst, 10, False, True, self)
@@ -205,13 +221,12 @@ class Game:#Game class is created
     def playerVsPlayer(self):
         self.currentScreen = self.gameScreen
         self.play = True
+        self.playAI = False
         self.clicked[12] = False
         self.buttonClick = [False for _ in range(self.size * self.size)]
         self.game = TicTacToe(self.size, self.numOfPlayers, True, 10, False, False, self)
 
 g = Game()#create and instance of the 'Game' class
 
-# while g.running:#whilst 'running' variable is TRUE
-#     g.new()#call the 'new' function
 g.run()
 pg.quit()
