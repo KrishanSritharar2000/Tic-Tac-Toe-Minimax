@@ -15,9 +15,11 @@ class Game:#Game class is created
         # self.clicked = [False for _ in range(12)]
         # self.clicked[self.numOfPlayers] = True
         # self.clicked[7 + self.size - 1] = True
+        self.playerIsFirst = True
         self.goToMenu()
         self.loadImages()
         self.goBack = False
+
 
     def loadImages(self):
         self.tokenImages = [None for _ in range(6)]
@@ -89,11 +91,14 @@ class Game:#Game class is created
     def menuScreen(self):
         self.screen.fill(BG_COLOUR)
         self.goBack = False
-        self.text("Tic Tac Toe", WIDTH/2, HEIGHT/14, WIDTH, HEIGHT, TEXT_COLOUR, 24)
-        self.button("Player vs AI", WIDTH/4, HEIGHT/4, WIDTH/4, HEIGHT/6, (0, 255, 0), (0, 175, 0), self.playerVsAI, 0)
-        self.button("Player vs Player", 3*WIDTH/4, HEIGHT/4, WIDTH/4, HEIGHT/6, (0, 255, 0), (0, 175, 0), self.playerVsPlayer, 1)
+        self.text("Tic Tac Toe", WIDTH/2, HEIGHT/14, WIDTH, HEIGHT, TEXT_COLOUR, 30)
+        self.button("Player vs AI", WIDTH/4, 2*HEIGHT/9, WIDTH/3, HEIGHT/6, (0, 255, 0), (0, 175, 0), self.playerVsAI, 0)
+        self.button("Player vs Player", 3*WIDTH/4, 2*HEIGHT/9, WIDTH/3, HEIGHT/6, (0, 255, 0), (0, 175, 0), self.playerVsPlayer, 1)
         
-        self.text("Number of Players", WIDTH/2, 7*HEIGHT/16, WIDTH, HEIGHT/12, TEXT_COLOUR)
+        self.button("Play First", 10*WIDTH/16, 13*HEIGHT/32, WIDTH/7, HEIGHT/7, (0, 255, 0), (0, 175, 0), self.setGoFirst, 14, True)
+        self.button("Play Second", 13*WIDTH/16, 13*HEIGHT/32, WIDTH/7, HEIGHT/7, (0, 255, 0), (0, 175, 0), self.setGoFirst, 15, False)
+
+        self.text("Number of Players", WIDTH/4, 7*HEIGHT/16, WIDTH, HEIGHT/12, TEXT_COLOUR)
         self.button("2", WIDTH/6, 9*HEIGHT/16, WIDTH/8, HEIGHT/8, (0, 255, 0), (0, 175, 0), self.setNumOfPlayers, 2, 2)
         self.button("3", 2*WIDTH/6, 9*HEIGHT/16, WIDTH/8, HEIGHT/8, (0, 255, 0), (0, 175, 0), self.setNumOfPlayers, 3, 3)
         self.button("4", 3*WIDTH/6, 9*HEIGHT/16, WIDTH/8, HEIGHT/8, (0, 255, 0), (0, 175, 0), self.setNumOfPlayers, 4, 4)
@@ -107,8 +112,12 @@ class Game:#Game class is created
         self.button("4", 4*WIDTH/6, 13*HEIGHT/16, WIDTH/8, HEIGHT/8, (0, 255, 0), (0, 175, 0), self.setSize, 10, 4)
         self.button("5", 5*WIDTH/6, 13*HEIGHT/16, WIDTH/8, HEIGHT/8, (0, 255, 0), (0, 175, 0), self.setSize, 11, 5)
         
-        
-        # pg.draw.rect(self.screen, (0, 255, 0), (WIDTH/2, HEIGHT/2, WIDTH/8, HEIGHT/8))
+    def setGoFirst(self, goFirst):
+        self.playerIsFirst = goFirst
+        if goFirst:
+            self.clicked[15] = False
+        else:
+            self.clicked[14] = False
 
     def gameScreen(self):
         if self.play:
@@ -161,51 +170,21 @@ class Game:#Game class is created
                 
         for i in range(self.size - 1):
             pg.draw.line(self.screen, BLACK, ((2+i)*WIDTH/length, HEIGHT/length), ((2+i)*WIDTH/length, (length-1)*HEIGHT/length))
-                # pg.draw.line(self.screen, BLACK, (2*WIDTH/5, HEIGHT/5), (2*WIDTH/5, 4*HEIGHT/5))
-                # pg.draw.line(self.screen, BLACK, (3*WIDTH/5, HEIGHT/5), (3*WIDTH/5, 4*HEIGHT/5))
             pg.draw.line(self.screen, BLACK, (WIDTH/length, (2+i)*HEIGHT/length), ((length-1)*WIDTH/length, (2+i)*HEIGHT/length))
-                # pg.draw.line(self.screen, BLACK, (WIDTH/5, 2*HEIGHT/5), (4*WIDTH/5, 2*HEIGHT/5))
-                # pg.draw.line(self.screen, BLACK, (WIDTH/5, 3*HEIGHT/5), (4*WIDTH/5, 3*HEIGHT/5))
-     
 
-
-        # if self.size == 1:
-        #     pass
-        # elif self.size == 2:
-        #     pass
-        # elif self.size == 3:
-        #     for row in range(self.game.board.size):
-        #         for col in range(self.game.board.size):
-        #             if self.game.board.isCellEmpty(row, col):
-        #                 self.button("", (row + 1) * WIDTH/5 + WIDTH/10 ,(col + 1) * HEIGHT/5 + HEIGHT/10, WIDTH/5, HEIGHT/5, BG_COLOUR, (120, 120, 120), index=row*self.game.board.size+col, clickArray=self.buttonClick)
-        #                 if self.buttonClick[row * self.game.board.size + col]:
-        #                     self.moveGiven = True
-        #                     self.moveGivenBoard = row * self.game.board.size + col
-        #             else:
-        #                 image = pg.transform.scale(self.tokenImages[self.game.board.playerTokens.index(self.game.board.board[row][col])], (int(WIDTH/5), int(HEIGHT/5)))
-        #                 rect = image.get_rect()
-        #                 rect.topleft = ((row + 1) * WIDTH/5 ,(col + 1) * HEIGHT/5)
-        #                 self.screen.blit(image, rect)
-                    
-        #     pg.draw.line(self.screen, BLACK, (2*WIDTH/5, HEIGHT/5), (2*WIDTH/5, 4*HEIGHT/5))
-        #     pg.draw.line(self.screen, BLACK, (3*WIDTH/5, HEIGHT/5), (3*WIDTH/5, 4*HEIGHT/5))
-        #     pg.draw.line(self.screen, BLACK, (WIDTH/5, 2*HEIGHT/5), (4*WIDTH/5, 2*HEIGHT/5))
-        #     pg.draw.line(self.screen, BLACK, (WIDTH/5, 3*HEIGHT/5), (4*WIDTH/5, 3*HEIGHT/5))
-
-
-        # elif self.size == 4:
-        #     pass
-        # elif self.size == 5:
-        #     pass
         pg.display.flip()
 
     def goToMenu(self, back=False):
         self.currentScreen = self.menuScreen
-        self.clicked = [False for _ in range(14)]
+        self.clicked = [False for _ in range(16)]
         self.clicked[self.numOfPlayers] = True
         self.clicked[7 + self.size - 1] = True
         if back:
             self.clicked[13] = True
+        if self.playerIsFirst:
+            self.clicked[14] = True
+        else:
+            self.clicked[15] = True
 
 
     def setNumOfPlayers(self, players):
@@ -221,7 +200,7 @@ class Game:#Game class is created
         self.play = True
         self.clicked[12] = False
         self.buttonClick = [False for _ in range(self.size * self.size)]
-        self.game = TicTacToe(self.size, 2, True, 10, False, True, self)
+        self.game = TicTacToe(self.size, 2, self.playerIsFirst, 10, False, True, self)
 
     def playerVsPlayer(self):
         self.currentScreen = self.gameScreen

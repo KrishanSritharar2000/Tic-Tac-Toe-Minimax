@@ -47,7 +47,7 @@ class TicTacToe():
             self.board.move(self.bestMoveConcurrent(), self.board.getPlayerToken(self.playerCounter))
         else:
             self.board.move(self.bestMove(), self.board.getPlayerToken(self.playerCounter))
-        self.board.printBoard()
+        # self.board.printBoard()
         self.__nextPlayer()
 
     def loadMoveTable(self):
