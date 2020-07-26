@@ -67,12 +67,13 @@ class TicTacToe():
         tableFile.close()
 
     def getGraphicalMove(self):
-        while(not self.graphicalGame.moveGiven):
-            print("doing")
+        while(not self.graphicalGame.moveGiven and not self.graphicalGame.goBack):
             self.graphicalGame.getMove()
-        self.board.move(self.graphicalGame.moveGivenBoard, self.board.getPlayerToken(self.playerCounter))
-        self.__nextPlayer()
-        self.graphicalGame.moveGiven = False
+        if not self.graphicalGame.goBack:
+            print("The move is ", self.graphicalGame.moveGivenBoard)
+            self.board.move(self.graphicalGame.moveGivenBoard, self.board.getPlayerToken(self.playerCounter))
+            self.__nextPlayer()
+            self.graphicalGame.moveGiven = False
 
 
 
@@ -83,14 +84,14 @@ class TicTacToe():
         if self.playerIsFirst:
             self.getGraphicalMove()
         self.__getAIMove()
-        while (not self.board.isFull()):
+        while (not self.board.isFull() and not self.graphicalGame.goBack):
             #Get move from player
             self.getGraphicalMove()
             if (self.board.checkWin() == 1):
                 draw = False
                 return 0
             #Make AI move
-            if not self.board.isFull():
+            if not self.board.isFull() and not self.graphicalGame.goBack:
                 self.__getAIMove()
                 if (self.board.checkWin() == 1):
                     draw = False
@@ -99,6 +100,7 @@ class TicTacToe():
 
         if (draw):
             return -1
+        self.saveMoveTable()
 
     def trainRandom(self, loops):
         start = time.time()

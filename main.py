@@ -17,6 +17,7 @@ class Game:#Game class is created
         # self.clicked[7 + self.size - 1] = True
         self.goToMenu()
         self.loadImages()
+        self.goBack = False
 
     def loadImages(self):
         self.tokenImages = [None for _ in range(6)]
@@ -87,6 +88,7 @@ class Game:#Game class is created
 
     def menuScreen(self):
         self.screen.fill(BG_COLOUR)
+        self.goBack = False
         self.text("Tic Tac Toe", WIDTH/2, HEIGHT/14, WIDTH, HEIGHT, TEXT_COLOUR, 24)
         self.button("Player vs AI", WIDTH/4, HEIGHT/4, WIDTH/4, HEIGHT/6, (0, 255, 0), (0, 175, 0), self.playerVsAI, 0)
         self.button("Player vs Player", 3*WIDTH/4, HEIGHT/4, WIDTH/4, HEIGHT/6, (0, 255, 0), (0, 175, 0), self.playerVsPlayer, 1)
@@ -133,42 +135,68 @@ class Game:#Game class is created
         self.button("Restart", 9*WIDTH/10, 2*HEIGHT/16, WIDTH/8, HEIGHT/8, (0, 255, 0), (0, 175, 0), self.playerVsAI, 12)
         self.button("Back", 1*WIDTH/10, 2*HEIGHT/16, WIDTH/8, HEIGHT/8, (0, 255, 0), (0, 175, 0), self.goToMenu, 13, True)
         if self.clicked[13]:
-            self.run()
+            self.goBack = True
+            self.clicked[13] = False
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 pg.quit()
                 quit()
 
-        if self.size == 1:
-            pass
-        elif self.size == 2:
-            pass
-        elif self.size == 3:
-            # self.game.board.board[0][0] = 'X'
-            # self.game.board.board[1][1] = 'O'  
-            for row in range(self.game.board.size):
-                for col in range(self.game.board.size):
-                    if self.game.board.isCellEmpty(row, col):
-                        self.button("", (row + 1) * WIDTH/5 + WIDTH/10 ,(col + 1) * HEIGHT/5 + HEIGHT/10, WIDTH/5, HEIGHT/5, BG_COLOUR, (120, 120, 120), index=row*self.game.board.size+col, clickArray=self.buttonClick)
-                        if self.buttonClick[row * self.game.board.size + col]:
-                            self.moveGiven = True
-                            self.moveGivenBoard = row * self.game.board.size + col
-                    else:
-                        image = pg.transform.scale(self.tokenImages[self.game.board.playerTokens.index(self.game.board.board[row][col])], (int(WIDTH/5), int(HEIGHT/5)))
-                        rect = image.get_rect()
-                        rect.topleft = ((row + 1) * WIDTH/5 ,(col + 1) * HEIGHT/5)
-                        self.screen.blit(image, rect)
+        length = self.size + 2
+        for row in range(self.game.board.size):
+            for col in range(self.game.board.size):
+                if self.game.board.isCellEmpty(row, col):
+                    self.button("", (row + 1) * WIDTH/length + WIDTH/(length*2) ,(col + 1) * HEIGHT/length + HEIGHT/(length*2), WIDTH/length, HEIGHT/length, BG_COLOUR, (120, 120, 120), index=row*self.game.board.size+col, clickArray=self.buttonClick)
                     
-            pg.draw.line(self.screen, BLACK, (2*WIDTH/5, HEIGHT/5), (2*WIDTH/5, 4*HEIGHT/5))
-            pg.draw.line(self.screen, BLACK, (3*WIDTH/5, HEIGHT/5), (3*WIDTH/5, 4*HEIGHT/5))
-            pg.draw.line(self.screen, BLACK, (WIDTH/5, 2*HEIGHT/5), (4*WIDTH/5, 2*HEIGHT/5))
-            pg.draw.line(self.screen, BLACK, (WIDTH/5, 3*HEIGHT/5), (4*WIDTH/5, 3*HEIGHT/5))
+                    if self.buttonClick[row * self.game.board.size + col]:
+                        self.moveGiven = True
+                        self.moveGivenBoard = row * self.game.board.size + col
+                else:
+                    image = pg.transform.scale(self.tokenImages[self.game.board.playerTokens.index(self.game.board.board[row][col])], (int(WIDTH/length), int(HEIGHT/length)))
+                    
+                    rect = image.get_rect()
+                    rect.topleft = ((row + 1) * WIDTH/length ,(col + 1) * HEIGHT/length)
+                    
+                    self.screen.blit(image, rect)
+                
+        for i in range(self.size - 1):
+            pg.draw.line(self.screen, BLACK, ((2+i)*WIDTH/length, HEIGHT/length), ((2+i)*WIDTH/length, (length-1)*HEIGHT/length))
+                # pg.draw.line(self.screen, BLACK, (2*WIDTH/5, HEIGHT/5), (2*WIDTH/5, 4*HEIGHT/5))
+                # pg.draw.line(self.screen, BLACK, (3*WIDTH/5, HEIGHT/5), (3*WIDTH/5, 4*HEIGHT/5))
+            pg.draw.line(self.screen, BLACK, (WIDTH/length, (2+i)*HEIGHT/length), ((length-1)*WIDTH/length, (2+i)*HEIGHT/length))
+                # pg.draw.line(self.screen, BLACK, (WIDTH/5, 2*HEIGHT/5), (4*WIDTH/5, 2*HEIGHT/5))
+                # pg.draw.line(self.screen, BLACK, (WIDTH/5, 3*HEIGHT/5), (4*WIDTH/5, 3*HEIGHT/5))
+     
 
 
-        elif self.size == 4:
-            pass
-        elif self.size == 5:
-            pass
+        # if self.size == 1:
+        #     pass
+        # elif self.size == 2:
+        #     pass
+        # elif self.size == 3:
+        #     for row in range(self.game.board.size):
+        #         for col in range(self.game.board.size):
+        #             if self.game.board.isCellEmpty(row, col):
+        #                 self.button("", (row + 1) * WIDTH/5 + WIDTH/10 ,(col + 1) * HEIGHT/5 + HEIGHT/10, WIDTH/5, HEIGHT/5, BG_COLOUR, (120, 120, 120), index=row*self.game.board.size+col, clickArray=self.buttonClick)
+        #                 if self.buttonClick[row * self.game.board.size + col]:
+        #                     self.moveGiven = True
+        #                     self.moveGivenBoard = row * self.game.board.size + col
+        #             else:
+        #                 image = pg.transform.scale(self.tokenImages[self.game.board.playerTokens.index(self.game.board.board[row][col])], (int(WIDTH/5), int(HEIGHT/5)))
+        #                 rect = image.get_rect()
+        #                 rect.topleft = ((row + 1) * WIDTH/5 ,(col + 1) * HEIGHT/5)
+        #                 self.screen.blit(image, rect)
+                    
+        #     pg.draw.line(self.screen, BLACK, (2*WIDTH/5, HEIGHT/5), (2*WIDTH/5, 4*HEIGHT/5))
+        #     pg.draw.line(self.screen, BLACK, (3*WIDTH/5, HEIGHT/5), (3*WIDTH/5, 4*HEIGHT/5))
+        #     pg.draw.line(self.screen, BLACK, (WIDTH/5, 2*HEIGHT/5), (4*WIDTH/5, 2*HEIGHT/5))
+        #     pg.draw.line(self.screen, BLACK, (WIDTH/5, 3*HEIGHT/5), (4*WIDTH/5, 3*HEIGHT/5))
+
+
+        # elif self.size == 4:
+        #     pass
+        # elif self.size == 5:
+        #     pass
         pg.display.flip()
 
     def goToMenu(self, back=False):
@@ -178,7 +206,6 @@ class Game:#Game class is created
         self.clicked[7 + self.size - 1] = True
         if back:
             self.clicked[13] = True
-            self.run()
 
 
     def setNumOfPlayers(self, players):
